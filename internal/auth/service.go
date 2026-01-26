@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -43,5 +44,5 @@ func (s *AuthService) Login(username, password string) (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString([]byte("secret"))
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
