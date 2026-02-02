@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+
+  mqtt-broker:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto_container
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -44,3 +55,5 @@ services:
 
 volumes:
   postgres_data:
+  mosquitto_data: # เพิ่มบรรทัดนี้
+  mosquitto_log:  # เพิ่มบรรทัดนี้
