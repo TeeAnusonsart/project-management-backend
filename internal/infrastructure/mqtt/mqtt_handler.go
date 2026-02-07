@@ -14,11 +14,12 @@ import (
 )
 
 type MQTTHandler struct {
-	usecase usecase.DeviceUsecase
+	deviceUsecase usecase.DeviceUsecase
+	widgetUsecase usecase.WidgetUsecase
 }
 
-func NewMQTTHandler(uc usecase.DeviceUsecase) *MQTTHandler {
-	return &MQTTHandler{usecase: uc}
+func NewMQTTHandler(uc usecase.DeviceUsecase,wuc usecase.WidgetUsecase) *MQTTHandler {
+	return &MQTTHandler{deviceUsecase: uc,widgetUsecase: wuc}
 }
 
 func (h *MQTTHandler) SubscribeDeviceRegistration(client mqtt.Client) {
@@ -35,7 +36,7 @@ func (h *MQTTHandler) SubscribeDeviceRegistration(client mqtt.Client) {
 		device := mappers.PayloadToDomain(&payload)
 
 		
-		err = h.usecase.RegisterDevice(device)
+		err = h.deviceUsecase.RegisterDevice(device)
 		if err != nil {
 			fmt.Printf("Failed to save device %s: %v\n", payload.DeviceID, err)
 			return
@@ -44,6 +45,18 @@ func (h *MQTTHandler) SubscribeDeviceRegistration(client mqtt.Client) {
 		fmt.Printf("Successfully registered device: %s\n", payload.DeviceID)
 	})
 }
+
+// func (h *MQTTHandler) SubscribeReply(client mqtt.Client) {
+
+// 	client.Subscribe("devices/reply/+", 1, func(c mqtt.Client, m mqtt.Message) {
+
+// 		var resp dto.CommandResponse
+// 		json.Unmarshal(m.Payload(), &resp)
+
+// 		fmt.Printf("Received reply for correlation ID %s: Widget %d new value %d\n", resp.CorrelationID, resp.WidgetID, resp.Value)
+// 		h.widgetUsecase.UpdateValue(resp.WidgetID, resp.Value)
+// 	})
+// }
 
 // type MonitorPayload struct {
 // 	Value    uint `json:"value"`

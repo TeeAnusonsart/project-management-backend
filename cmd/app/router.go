@@ -22,4 +22,10 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 		})
 	})
 
+	// deviceGroup := app.Group("/api/devices")
+	// deviceGroup.Post(
+	// 	"/widgets/:widgetId/command",
+	// 	handlers.Command.SendCommand,
+	// )
+
 }

@@ -6,9 +6,9 @@ import (
 	"project-home-iot/internal/infrastructure/mqtt/dtos"
 )
 
-func DomainToDeviceModel(d *domain.Device) *models.DeviceModel {
-	return &models.DeviceModel{
-		DeviceID:   d.DeviceID,
+func DomainToDeviceModel(d *domain.Device) *models.Device {
+	return &models.Device{
+		// DeviceID:   d.DeviceID,
 		DeviceName: d.DeviceName,
 		DeviceKey:  d.DeviceKey,
 		DeviceType: d.DeviceType,
@@ -16,10 +16,10 @@ func DomainToDeviceModel(d *domain.Device) *models.DeviceModel {
 	}
 }
 
-func ModelToDomainDevice(m *models.DeviceModel) *domain.Device {
+func ModelToDomainDevice(m *models.Device) *domain.Device {
 	return &domain.Device{
 		ID:         m.ID,
-		DeviceID:   m.DeviceID,
+		// DeviceID:   m.DeviceID,
 		DeviceName: m.DeviceName,
 		DeviceKey:  m.DeviceKey,
 		DeviceType: m.DeviceType,
@@ -29,7 +29,7 @@ func ModelToDomainDevice(m *models.DeviceModel) *domain.Device {
 
 func DomainToDevicePayload(d *domain.Device) *dtos.DevicePayload {
 	return &dtos.DevicePayload{
-		DeviceID:   d.DeviceID,
+		// DeviceID:   d.DeviceID,
 		DeviceName: d.DeviceName,
 		DeviceType: d.DeviceType,
 		DeviceKey:  d.DeviceKey,
@@ -39,7 +39,7 @@ func DomainToDevicePayload(d *domain.Device) *dtos.DevicePayload {
 
 func PayloadToDomain(p *dtos.DevicePayload) *domain.Device {
 	return &domain.Device{
-		DeviceID:   p.DeviceID,
+		// DeviceID:   p.DeviceID,
 		DeviceName: p.DeviceName,
 		DeviceType: p.DeviceType,
 		DeviceKey:  p.DeviceKey,

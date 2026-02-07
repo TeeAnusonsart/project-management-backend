@@ -1,0 +1,18 @@
+package provider
+
+import (
+	"github.com/google/wire"
+
+	"project-home-iot/internal/core/usecase"
+	httpHandler "project-home-iot/internal/interfaces/http"
+)
+
+var ProviderSet = wire.NewSet(
+	usecase.NewCommandUsecase,
+	httpHandler.NewCommandHandler,
+)
+
+var InfrastructureSet = wire.NewSet(
+	gorm.NewDeviceRepository,
+	mqtt.NewClient, // หรือ provider ของ mqtt.Client
+)

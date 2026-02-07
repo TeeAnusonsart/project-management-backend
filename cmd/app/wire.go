@@ -12,6 +12,7 @@ import (
 
 type AppHandlers struct {
 	Auth *auth.AuthHandler
+	Command *CommandHandler
 }
 
 func InitializeApp(db *gorm.DB) *AppHandlers {

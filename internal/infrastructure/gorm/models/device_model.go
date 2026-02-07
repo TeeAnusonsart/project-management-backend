@@ -1,14 +1,16 @@
 package models
 
 
-type DeviceModel struct {
+type Device struct {
 	ID uint `gorm:"primaryKey"`
 
-	DeviceID string `gorm:"uniqueIndex;not null"`
+	// DeviceID string `gorm:"uniqueIndex;not null"`
 
 	DeviceName string
 	DeviceKey  string
 	DeviceType string
 	Topic      string
+
+	Widgets    []Widget `gorm:"foreignKey:DeviceID"`
 
 }
