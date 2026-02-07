@@ -7,18 +7,35 @@
 package main
 
 import (
+	"github.com/eclipse/paho.mqtt.golang"
 	"gorm.io/gorm"
 	"project-home-iot/internal/auth"
+	"project-home-iot/internal/core/usecase"
+	gorm2 "project-home-iot/internal/infrastructure/gorm"
+	"project-home-iot/internal/infrastructure/http"
+	mqtt2 "project-home-iot/internal/infrastructure/mqtt"
 )
 
 // Injectors from wire.go:
 
-func InitializeApp(db *gorm.DB) *AppHandlers {
+func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	repository := auth.NewRepository(db)
 	authService := auth.NewService(repository)
 	authHandler := auth.NewAuthHandler(authService)
+	deviceRepository := gorm2.NewDeviceRepository(db)
+	capabilityRepository := gorm2.NewCapabilityRepository(db)
+	capabilityUsecase := usecase.NewCapabilityUsecase(capabilityRepository)
+	widgetRepository := gorm2.NewWidgetRepository(db)
+	widgetUsecase := usecase.NewWidgetUsecase(widgetRepository)
+	deviceUsecase := usecase.NewDeviceUsecase(deviceRepository, capabilityUsecase, widgetUsecase)
+	deviceHandler := http.NewDeviceHandler(deviceUsecase)
+	deviceCommander := mqtt2.NewMQTTDeviceCommander(client)
+	commandUsecase := usecase.NewCommandUsecase(deviceRepository, widgetRepository, deviceCommander)
+	commandHandler := http.NewCommandHandler(commandUsecase)
 	appHandlers := &AppHandlers{
-		Auth: authHandler,
+		Auth:    authHandler,
+		Device:  deviceHandler,
+		Command: commandHandler,
 	}
 	return appHandlers
 }
@@ -26,5 +43,7 @@ func InitializeApp(db *gorm.DB) *AppHandlers {
 // wire.go:
 
 type AppHandlers struct {
-	Auth *auth.AuthHandler
+	Auth    *auth.AuthHandler
+	Device  *http.DeviceHandler
+	Command *http.CommandHandler
 }

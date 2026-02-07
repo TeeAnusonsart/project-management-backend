@@ -47,3 +47,43 @@ func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error)
 // func (r *DeviceRepository) CreateMonitorData(data *domain.MonitorData) error {
 // 	return r.db.Create(data).Error
 // }
+
+func (r *DeviceRepository) GetAll() ([]*domain.Device, error) {
+	var models []models.Device
+	if err := r.db.Find(&models).Error; err != nil {
+		return nil, err
+	}
+
+	var devices []*domain.Device
+	for _, m := range models {
+		devices = append(devices, mappers.ModelToDomainDevice(&m))
+	}
+	return devices, nil
+}
+
+func (r *DeviceRepository) GetByID(id uint) (*domain.Device, error) {
+	var model models.Device
+	if err := r.db.First(&model, id).Error; err != nil {
+		return nil, err
+	}
+	return mappers.ModelToDomainDevice(&model), nil
+}
+
+func (r *DeviceRepository) UpdateName(id uint, name string) error {
+	return r.db.Model(&models.Device{}).
+		Where("id = ?", id).
+		Update("device_name", name).Error
+}
+
+func (r *DeviceRepository) Pair(id uint, deviceKey string) error {
+	return r.db.Model(&models.Device{}).
+		Where("id = ?", id).
+		Update("device_key", deviceKey).Error
+}
+
+func (r *DeviceRepository) Unpair(id uint) error {
+	return r.db.Model(&models.Device{}).
+		Where("id = ?", id).
+		Update("device_key", "").Error
+}
+
