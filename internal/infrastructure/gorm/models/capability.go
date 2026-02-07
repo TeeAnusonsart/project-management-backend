@@ -1,8 +1,12 @@
-package domain
+package models
+
+import (
+	"gorm.io/gorm"
+)
 
 // Device ตารางหลักของอุปกรณ์
 type Capability struct {
-	ID             uint
+	gorm.Model
 	CapabilityType string
-	Widgets        []Widget
+	Widgets        []WidgetModel `gorm:"foreignKey:CapabilityID"`
 }

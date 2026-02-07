@@ -1,6 +1,5 @@
 package models
 
-import "time"
 
 type DeviceModel struct {
 	ID uint `gorm:"primaryKey"`
@@ -12,5 +11,4 @@ type DeviceModel struct {
 	DeviceType string
 	Topic      string
 
-	LastOnline time.Time
 }

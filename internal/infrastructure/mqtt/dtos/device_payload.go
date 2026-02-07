@@ -1,4 +1,4 @@
-package dto
+package dtos
 
 type DevicePayload struct {
 	DeviceID   string `json:"device_id"`

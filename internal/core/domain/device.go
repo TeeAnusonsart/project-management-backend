@@ -1,9 +1,5 @@
 package domain
 
-import (
-	"time"
-)
-
 type Device struct {
 	ID uint
 
@@ -13,6 +9,5 @@ type Device struct {
 	DeviceType string
 	Topic      string
 
-	LastOnline time.Time
-	Widgets    []Widget
+	Widgets []Widget
 }
