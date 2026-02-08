@@ -26,6 +26,7 @@ func main() {
 	db := database.ConnectDB()
 	db.AutoMigrate(&models.Device{})
 	db.AutoMigrate(&models.Capability{})
+	db.AutoMigrate(&models.Log{})
 
 	// 2. สร้างตารางลูกที่มี FK ทีหลัง
 	err := db.AutoMigrate(&models.Widget{})
@@ -37,6 +38,7 @@ func main() {
 	deviceRepo := gorm.NewDeviceRepository(db)
 	capabilityRepo := gorm.NewCapabilityRepository(db)
 	widgetRepo := gorm.NewWidgetRepository(db)
+	recorderRepo := gorm.NewRecorderRepository(db)
 
 	// capabilityUsecase := usecase.NewCapabilityUsecase(capabilityRepo)
 	widgetUsecase := usecase.NewWidgetUsecase(widgetRepo)
@@ -60,7 +62,7 @@ func main() {
 	app := fiber.New()
 
 	deviceCommander :=mqtt.NewMQTTDeviceCommander(client)
-	commandUsecase := usecase.NewCommandUsecase(deviceRepo,widgetRepo,deviceCommander)
+	commandUsecase := usecase.NewCommandUsecase(deviceRepo,widgetRepo,deviceCommander,recorderRepo)
 
 	commandHandler := http.NewCommandHandler(commandUsecase)
 	app.Post("/api/widgets/:widgetId/command", commandHandler.SendCommand)

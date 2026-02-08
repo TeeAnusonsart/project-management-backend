@@ -52,7 +52,7 @@ func (m *mqttDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCom
     select {
     case res := <-ch:
         return &res, nil
-    case <-time.After(30 * time.Second):
+    case <-time.After(60 * time.Second):
         m.client.Unsubscribe(replyTopic)
         return nil, fmt.Errorf("device timeout on topic %s", replyTopic)
     }

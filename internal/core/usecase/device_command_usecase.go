@@ -12,14 +12,16 @@ type CommandUsecase interface {
 type commandUsecase struct {
     deviceRepo       domain.DeviceRepository
     widgetRepository domain.WidgetRepository
-    commander        domain.DeviceCommander // เรียกผ่าน Interface
+    commander        domain.DeviceCommander
+    recorder      domain.Recorder
 }
 
-func NewCommandUsecase(dr domain.DeviceRepository, wr domain.WidgetRepository, dc domain.DeviceCommander) CommandUsecase {
+func NewCommandUsecase(dr domain.DeviceRepository, wr domain.WidgetRepository, dc domain.DeviceCommander,rd domain.Recorder) CommandUsecase {
     return &commandUsecase{
         deviceRepo:       dr,
         widgetRepository: wr,
         commander:        dc,
+        recorder:      rd,
     }
 }
 
@@ -33,6 +35,8 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {
     if err != nil {
         return err
     }
+
+    u.recorder.RecordLog(cmd.WidgetID, "command", resp.Value)
 
     return u.widgetRepository.UpdateValue(cmd.WidgetID, resp.Value)
 }
