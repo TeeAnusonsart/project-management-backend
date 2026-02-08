@@ -25,7 +25,8 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	deviceRepository := gorm2.NewDeviceRepository(db)
 	capabilityRepository := gorm2.NewCapabilityRepository(db)
 	widgetRepository := gorm2.NewWidgetRepository(db)
-	deviceUsecase := usecase.NewDeviceUsecase(deviceRepository, capabilityRepository, widgetRepository)
+	pairCommander := mqtt2.NewMQTTPairCommander(client)
+	deviceUsecase := usecase.NewDeviceUsecase(deviceRepository, capabilityRepository, widgetRepository, pairCommander)
 	deviceHandler := http.NewDeviceHandler(deviceUsecase)
 	deviceCommander := mqtt2.NewMQTTDeviceCommander(client)
 	commandUsecase := usecase.NewCommandUsecase(deviceRepository, widgetRepository, deviceCommander)
@@ -38,6 +39,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	userRepository := gorm2.NewUserRepository(db)
 	userUsecase := usecase.NewUserUsecase(userRepository)
 	userHandler := http.NewUserHandler(userUsecase)
+	mqttHandler := mqtt2.NewMQTTHandler(deviceUsecase, widgetUsecase)
 	appHandlers := &AppHandlers{
 		Auth:    authHandler,
 		Device:  deviceHandler,
@@ -45,6 +47,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		Room:    roomHandler,
 		Widget:  widgetHandler,
 		User:    userHandler,
+		MQTT:    mqttHandler,
 	}
 	return appHandlers
 }
@@ -58,4 +61,5 @@ type AppHandlers struct {
 	Room    *http.RoomHandler
 	Widget  *http.WidgetHandler
 	User    *http.UserHandler
+	MQTT    *mqtt2.MQTTHandler
 }

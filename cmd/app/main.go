@@ -32,11 +32,11 @@ func main() {
 	}
 
 	handlers := InitializeApp(db, client)
-
+	handlers.MQTT.SubscribeDeviceRegistration(client)
 	app := fiber.New()
 
 	app.Static("/uploads", "./uploads")
-	
+
 	SetupRoutes(app, handlers)
 
 	fmt.Println("Server is starting on :3000...")

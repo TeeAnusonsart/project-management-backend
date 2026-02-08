@@ -142,6 +142,11 @@ func (h *WidgetHandler) ChangeStatus(c *fiber.Ctx) error {
 }
 
 func (h *WidgetHandler) ChangeOrder(c *fiber.Ctx) error {
+	roomID, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid room id")
+	}
+
 	var req struct {
 		WidgetOrders []uint `json:"widget_orders"`
 	}
@@ -150,12 +155,12 @@ func (h *WidgetHandler) ChangeOrder(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if err := h.usecase.ChangeOrder(req.WidgetOrders); err != nil {
+	if err := h.usecase.ChangeOrder(uint(roomID), req.WidgetOrders); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "การดำเนินการเสร็จสิ้น",
+		"message": "เปลี่ยนลำดับ widget เรียบร้อยแล้ว",
 	})
 }
 

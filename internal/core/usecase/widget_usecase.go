@@ -12,7 +12,7 @@ type WidgetUsecase interface {
 
 	UpdateValue(widgetID uint, value uint) error
 	UpdateStatus(id uint, status string) error
-	ChangeOrder(widgetOrders []uint) error
+	ChangeOrder(roomID uint, widgetOrders []uint) error
 }
 
 type widgetUsecase struct {
@@ -51,6 +51,7 @@ func (u *widgetUsecase) UpdateStatus(id uint, status string) error {
 	return u.widgetRepo.UpdateStatus(id, status)
 }
 
-func (u *widgetUsecase) ChangeOrder(widgetOrders []uint) error {
-	return u.widgetRepo.ChangeOrder(widgetOrders)
+func (u *widgetUsecase) ChangeOrder(roomID uint, widgetOrders []uint) error {
+    return u.widgetRepo.ChangeOrder(roomID, widgetOrders)
 }
+

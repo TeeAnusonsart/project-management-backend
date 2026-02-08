@@ -42,6 +42,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 
 	roomGroup.Post("/:room_id/devices", handlers.Room.AddDevice)
 	roomGroup.Get("/:room_id/devices", handlers.Room.ListDevices)
+	roomGroup.Patch("/:room_id/widgets/order", handlers.Widget.ChangeOrder)
 
 	// widget
 	widgetGroup := api.Group("/widgets")
@@ -54,7 +55,6 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 
 	widgetGroup.Post("/", handlers.Widget.CreateWidget)
 	widgetGroup.Post("/:widgetId/command", handlers.Command.SendCommand)
-	widgetGroup.Patch("/order", handlers.Widget.ChangeOrder)
 
 	// user
 	userGroup := api.Group("/users")

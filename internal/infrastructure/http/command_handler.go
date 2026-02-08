@@ -49,6 +49,6 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-		"correlation_id": correlationID,
+		"message": "success",
 	})
 }

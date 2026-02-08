@@ -4,7 +4,6 @@ import (
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/infrastructure/mappers"
 	"project-home-iot/internal/infrastructure/gorm/models"
-
 	"gorm.io/gorm"
 )
 
@@ -18,16 +17,14 @@ func NewDeviceRepository(db *gorm.DB) *DeviceRepository {
 
 func (r *DeviceRepository) CreateDevice(device *domain.Device) error {
 	model := mappers.DomainToDeviceModel(device)
-	if err := r.db.Create(model).Error; err != nil {
-        return err
-    }
-	device.ID = model.ID
-	return nil
+
+	return r.db.Create(model).Error
 }
+
 
 func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error) {
 	model := domain.Device{}
-	err := r.db.Table("devices").Select("devices.id as id, devices.device_name, devices.device_key, devices.device_type, devices.topic").
+	err := r.db.Table("devices").Select("devices.id as id, devices.device_name, devices.device_type, devices.topic").
 		Joins("join widgets on widgets.device_id = devices.id").
 		Where("widgets.id = ?", widgetID).
 		First(&model).Error
@@ -36,9 +33,7 @@ func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error)
 	}
 	device := &domain.Device{
 		ID:         model.ID,
-		// DeviceID:   model.DeviceID,
 		DeviceName: model.DeviceName,
-		DeviceKey:  model.DeviceKey,
 		DeviceType: model.DeviceType,
 		Topic:      model.Topic,
 	}
