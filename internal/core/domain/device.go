@@ -12,6 +12,13 @@ type Device struct {
 	Widgets []Widget
 }
 
+type DeviceSummary struct {
+	ID   uint
+	DeviceName string
+	DeviceType string
+}
+
+
 func (d *Device) Validate() error {
 	if d.ID == 0 {
 		return fmt.Errorf("device id is required")

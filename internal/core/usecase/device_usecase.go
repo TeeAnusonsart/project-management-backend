@@ -8,8 +8,8 @@ import (
 
 type DeviceUsecase interface {
 	RegisterDevice(device *domain.Device) error
-	ListDevices() ([]*domain.Device, error)
-	GetDevice(id uint) (*domain.Device, error)
+	ListDevices() ([]*domain.DeviceSummary, error)
+	GetDevice(id uint) (*domain.DeviceSummary, error)
 	UpdateDevice(id uint, name string) error
 	PairDevice(id uint, deviceKey string) error
 	UnpairDevice(id uint) error
@@ -73,12 +73,12 @@ func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
 // 	return u.repo.CreateMonitorData(data)
 // }
 
-func (u *deviceUsecase) ListDevices() ([]*domain.Device, error) {
-	return u.repo.GetAll()
+func (u *deviceUsecase) ListDevices() ([]*domain.DeviceSummary, error) {
+	return u.repo.GetAllSummaries()
 }
 
-func (u *deviceUsecase) GetDevice(id uint) (*domain.Device, error) {
-	return u.repo.GetByID(id)
+func (u *deviceUsecase) GetDevice(id uint) (*domain.DeviceSummary, error) {
+	return u.repo.GetSummaryByID(id)
 }
 
 func (u *deviceUsecase) UpdateDevice(id uint, name string) error {

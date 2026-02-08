@@ -42,3 +42,5 @@ func PayloadToDomain(p *dtos.DevicePayload) *domain.Device {
 		Topic:      p.Topic,
 	}
 }
+
+

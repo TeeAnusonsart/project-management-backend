@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/usecase"
+	"project-home-iot/internal/infrastructure/http/dtos"
 )
 
 type DeviceHandler struct {
@@ -21,8 +22,14 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(fiber.Map{"data": devices})
+	var response []dtos.DeviceResponse
+	for _, d := range devices {
+		response = append(response, toDeviceResponse(d))
+	}
+
+	return c.JSON(fiber.Map{"data": response})
 }
+
 
 func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
@@ -32,7 +39,7 @@ func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(device)
+	return c.JSON(toDeviceResponse(device))
 }
 
 func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
