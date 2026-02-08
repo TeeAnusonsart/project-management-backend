@@ -15,21 +15,29 @@ func NewRecorderRepository(db *gorm.DB) *RecorderRepository {
 }
 
 func (r *RecorderRepository) DataReceive(log *domain.Log) error {
-	// Implementation for receiving data
+	model := mappers.LogDomainToModel(log)
+
+	if err := r.db.Create(model).Error; err != nil {
+		return err
+	}
+
+	// sync ID กลับไป domain (optional แต่ดี)
+	log.ID = model.ID
 	return nil
 }
 
-func (r *RecorderRepository) RecordLog(widgetId uint,eventType string,value uint) error {
+func (r *RecorderRepository) RecordLog(
+	widgetId uint,
+	eventType string,
+	value uint,
+) error {
+
 	log := &domain.Log{
 		WidgetID:  widgetId,
-		EventTpye: eventType,
+		EventType: eventType,
 		Value:     value,
-		ActorType: "",
+		ActorType: "system", // หรือ inject จาก context
 	}
-	model := mappers.LogDomainToModel(log)
-	if err := r.db.Create(model).Error; err != nil {
-        return err
-    }
-	// Implementation for recording log
-	return nil
+
+	return r.DataReceive(log)
 }

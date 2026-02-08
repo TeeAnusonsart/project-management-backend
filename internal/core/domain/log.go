@@ -5,5 +5,5 @@ type Log struct {
 	WidgetID  uint
 	ActorType string
 	Value     uint
-	EventTpye string
+	EventType string
 }
