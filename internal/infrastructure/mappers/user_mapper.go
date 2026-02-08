@@ -14,6 +14,7 @@ func DomainToUserModel(u *domain.User) *models.User {
 		Password:    u.Password,
 		Email:       u.Email,
 		ProfilePath: u.ProfilePath,
+		Role:        string(u.Role),
 	}
 }
 
@@ -25,5 +26,6 @@ func ModelToDomainUser(m *models.User) *domain.User {
 		Password:    m.Password,
 		Email:       m.Email,
 		ProfilePath: m.ProfilePath,
+		Role:        domain.UserRole(m.Role),
 	}
 }

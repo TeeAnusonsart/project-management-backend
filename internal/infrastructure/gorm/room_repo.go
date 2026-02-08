@@ -56,8 +56,15 @@ func (r *RoomRepository) Update(room *domain.Room) error {
 }
 
 func (r *RoomRepository) Delete(id uint) error {
+	if err := r.db.Model(&models.Device{}).
+		Where("room_id = ?", id).
+		Update("room_id", nil).Error; err != nil {
+		return err
+	}
+
 	return r.db.Delete(&models.Room{}, id).Error
 }
+
 
 func (r *RoomRepository) AddDevice(roomID uint, deviceID uint) error {
 	return r.db.Model(&models.Device{}).
@@ -65,17 +72,20 @@ func (r *RoomRepository) AddDevice(roomID uint, deviceID uint) error {
 		Update("room_id", roomID).Error
 }
 
-func (r *RoomRepository) ListDevices(roomID uint) ([]*domain.Device, error) {
-	var deviceModels []models.Device
-	if err := r.db.Where("room_id = ?", roomID).Find(&deviceModels).Error; err != nil {
-		return nil, err
-	}
+func (r *RoomRepository) ListDeviceSummaries(roomID uint) ([]*domain.DeviceSummary, error) {
+	var result []*domain.DeviceSummary
 
-	var result []*domain.Device
-	for _, d := range deviceModels {
-		result = append(result, mappers.ModelToDomainDevice(&d))
+	err := r.db.
+		Table("devices").
+		Select("id, device_name, device_type").
+		Where("room_id = ?", roomID).
+		Scan(&result).Error
+
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
 }
+
 

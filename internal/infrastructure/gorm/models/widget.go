@@ -7,7 +7,7 @@ import (
 // Device ตารางหลักของอุปกรณ์
 type Widget struct {
 	gorm.Model
-	Widget_status string
+	WidgetStatus string
 	Value         uint
 	WidgetOrder   uint `gorm:"column:widget_order"`
 

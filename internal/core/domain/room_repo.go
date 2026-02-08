@@ -8,5 +8,5 @@ type RoomRepository interface {
 	Delete(id uint) error
 
 	AddDevice(roomID uint, deviceID uint) error
-	ListDevices(roomID uint) ([]*Device, error)
+	ListDeviceSummaries(roomID uint) ([]*DeviceSummary, error)
 }

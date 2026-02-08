@@ -58,7 +58,7 @@ func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
 		widget := &domain.Widget{
 			DeviceID:      device.ID,
 			CapabilityID:  cap.ID,
-			Widget_status: "inactive",
+			WidgetStatus: "inactive",
 		}
 
 		if err := u.widgetRepo.CreateWidget(widget); err != nil {

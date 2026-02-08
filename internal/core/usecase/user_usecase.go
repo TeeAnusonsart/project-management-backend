@@ -32,6 +32,14 @@ func (u *userUsecase) CreateUser(user *domain.User) error {
 		return errors.New("password is required")
 	}
 
+	if user.Role == "" {
+		user.Role = domain.RoleUser
+	}
+
+	if !user.Role.IsValid() {
+		return errors.New("invalid role")
+	}
+
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -40,6 +48,7 @@ func (u *userUsecase) CreateUser(user *domain.User) error {
 	user.Password = string(hashed)
 	return u.userRepo.Create(user)
 }
+
 
 func (u *userUsecase) ListUsers() ([]*domain.User, error) {
 	return u.userRepo.FindAll()

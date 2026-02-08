@@ -9,6 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
+	"project-home-iot/internal/infrastructure/http/dtos"
+	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
 )
 
 type UserHandler struct {
@@ -25,28 +27,16 @@ func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	var response []fiber.Map
+	var response []dtos.UserResponse
 	for _, u := range users {
-		response = append(response, fiber.Map{
-			"user_id":      u.ID,
-			"username":     u.Username,
-			"name":         u.Name,
-			"email":        u.Email,
-			"profile_path": u.ProfilePath,
-		})
+		response = append(response, httpmapper.ToUserResponse(u))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
 }
 
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	var req struct {
-		Username    string `json:"username"`
-		Name        string `json:"name"`
-		Password    string `json:"password"`
-		Email       string `json:"email"`
-		ProfilePath string `json:"profile_path"`
-	}
+	var req dtos.CreateUserRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -80,13 +70,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(fiber.Map{
-		"user_id":      user.ID,
-		"username":     user.Username,
-		"name":         user.Name,
-		"email":        user.Email,
-		"profile_path": user.ProfilePath,
-	})
+	return c.JSON(httpmapper.ToUserResponse(user))
 }
 
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
@@ -110,10 +94,7 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
 	}
 
-	var req struct {
-		OldPassword string `json:"old_password"`
-		NewPassword string `json:"new_password"`
-	}
+	var req dtos.ChangePasswordRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())

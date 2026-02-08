@@ -9,4 +9,5 @@ type User struct {
 	Password    string
 	Email       string
 	ProfilePath string
+	Role        string
 }

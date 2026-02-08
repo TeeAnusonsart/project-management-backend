@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/usecase"
 	"project-home-iot/internal/infrastructure/http/dtos"
+	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
 )
 
 type DeviceHandler struct {
@@ -24,7 +25,7 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 
 	var response []dtos.DeviceResponse
 	for _, d := range devices {
-		response = append(response, toDeviceResponse(d))
+		response = append(response, httpmapper.ToDeviceResponse(d))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
@@ -39,15 +40,13 @@ func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(toDeviceResponse(device))
+	return c.JSON(httpmapper.ToDeviceResponse(device))
 }
 
 func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
 
-	var req struct {
-		DeviceName string `json:"device_name"`
-	}
+	var req dtos.UpdateDeviceRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -65,9 +64,7 @@ func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
 func (h *DeviceHandler) PairDevice(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
 
-	var req struct {
-		DeviceKey string `json:"device_key"`
-	}
+	var req dtos.PairDeviceRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())

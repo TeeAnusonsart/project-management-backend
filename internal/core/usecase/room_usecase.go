@@ -10,7 +10,7 @@ type RoomUsecase interface {
 	DeleteRoom(id uint) error
 
 	AddDeviceToRoom(roomID uint, deviceID uint) error
-	ListDevicesInRoom(roomID uint) ([]*domain.Device, error)
+	ListDevicesInRoom(roomID uint) ([]*domain.DeviceSummary, error)
 }
 
 type roomUsecase struct {
@@ -51,6 +51,6 @@ func (u *roomUsecase) AddDeviceToRoom(roomID uint, deviceID uint) error {
 	return u.roomRepo.AddDevice(roomID, deviceID)
 }
 
-func (u *roomUsecase) ListDevicesInRoom(roomID uint) ([]*domain.Device, error) {
-	return u.roomRepo.ListDevices(roomID)
+func (u *roomUsecase) ListDevicesInRoom(roomID uint) ([]*domain.DeviceSummary, error) {
+	return u.roomRepo.ListDeviceSummaries(roomID)
 }

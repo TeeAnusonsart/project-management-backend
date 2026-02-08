@@ -12,19 +12,39 @@ func WidgetDomainToModel(d *domain.Widget) *models.Widget {
 		DeviceID:      d.DeviceID,
 		CapabilityID:  d.CapabilityID,
 		Value:         d.Value,
-		Widget_status: d.Widget_status,
+		WidgetStatus: d.WidgetStatus,
 		WidgetOrder:   d.WidgetOrder,
 	}
 }
 
 func WidgetModelToDomain(m *models.Widget) *domain.Widget {
-	return &domain.Widget{
+
+	widget := &domain.Widget{
 		ID:            m.ID,
 		DeviceID:      m.DeviceID,
 		CapabilityID:  m.CapabilityID,
 		Value:         m.Value,
-		Widget_status: m.Widget_status,
+		WidgetStatus:  m.WidgetStatus,
 		WidgetOrder:   m.WidgetOrder,
 	}
+
+	if m.Device.ID != 0 {
+		widget.Device = &domain.Device{
+			ID:         m.Device.ID,
+			DeviceName: m.Device.DeviceName,
+			DeviceType: m.Device.DeviceType,
+			Topic:      m.Device.Topic,
+		}
+	}
+
+	if m.Capability.ID != 0 {
+		widget.Capability = &domain.Capability{
+			ID:             m.Capability.ID,
+			CapabilityType: m.Capability.CapabilityType,
+		}
+	}
+
+	return widget
 }
+
 
