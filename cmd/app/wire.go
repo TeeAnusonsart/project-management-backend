@@ -45,7 +45,6 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
         wire.Bind(new(domain.UserRepository), new(*gormRepo.UserRepository)),
 
 		// uc
-		usecase.NewCapabilityUsecase,
 		usecase.NewDeviceUsecase,
 		usecase.NewWidgetUsecase,
 		usecase.NewRoomUsecase,

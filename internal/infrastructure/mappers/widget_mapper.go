@@ -1,6 +1,7 @@
 package mappers
 
 import (
+	"gorm.io/gorm"
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/infrastructure/gorm/models"
 )

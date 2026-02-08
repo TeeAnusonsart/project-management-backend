@@ -23,9 +23,18 @@ type deviceUsecase struct {
 
 }
 
-func NewDeviceUsecase(r domain.DeviceRepository, cuc CapabilityUsecase, wuc WidgetUsecase) DeviceUsecase {
-	return &deviceUsecase{repo: r, capabilityRepo: cuc, widgetRepo: wuc}
+func NewDeviceUsecase(
+    r domain.DeviceRepository,
+    cr domain.CapabilityRepository,
+    wr domain.WidgetRepository,
+) DeviceUsecase {
+    return &deviceUsecase{
+        repo:           r,
+        capabilityRepo: cr,
+        widgetRepo:     wr,
+    }
 }
+
 
 func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
 	// if device.DeviceID == "" {

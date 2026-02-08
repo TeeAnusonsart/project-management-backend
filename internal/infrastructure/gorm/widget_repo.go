@@ -21,7 +21,9 @@ func (r *WidgetRepository) CreateWidget(widget *domain.Widget) error {
 }
 
 func (r *WidgetRepository) UpdateValue(widgetID uint, value uint) error {
-	return r.db.Model(&domain.Widget{}).Where("id = ?", widgetID).Update("value", value).Error
+	return r.db.Model(&domain.Widget{}).
+		Where("id = ?", widgetID).
+		Update("value", value).Error
 }
 
 func (r *WidgetRepository) FindAll() ([]*domain.Widget, error) {
@@ -68,9 +70,10 @@ func (r *WidgetRepository) Delete(id uint) error {
 
 func (r *WidgetRepository) Update(widget *domain.Widget) error {
 	model := mappers.WidgetDomainToModel(widget)
+
 	return r.db.Model(&models.Widget{}).
-		Where("id = ?", widgetID).
-		Update("value", value).Error
+		Where("id = ?", widget.ID).
+		Updates(model).Error
 }
 
 func (r *WidgetRepository) UpdateStatus(id uint, status string) error {
