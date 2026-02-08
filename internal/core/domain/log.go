@@ -2,9 +2,8 @@ package domain
 
 type Log struct {
 	ID        uint
-	WidgetID  string
+	WidgetID  uint
 	ActorType string
-	Value     string
-	TimeStamp string
+	Value     uint
 	EventTpye string
 }

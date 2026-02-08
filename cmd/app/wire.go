@@ -37,6 +37,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		gormRepo.NewWidgetRepository,
 		gormRepo.NewRoomRepository,
         gormRepo.NewUserRepository,
+		gormRepo.NewRecorderRepository,
 
 		// bind
 		wire.Bind(new(domain.DeviceRepository), new(*gormRepo.DeviceRepository)),
@@ -44,6 +45,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		wire.Bind(new(domain.WidgetRepository), new(*gormRepo.WidgetRepository)),
 		wire.Bind(new(domain.RoomRepository), new(*gormRepo.RoomRepository)),
         wire.Bind(new(domain.UserRepository), new(*gormRepo.UserRepository)),
+		wire.Bind(new(domain.Recorder), new(*gormRepo.RecorderRepository)),
 
 		// uc
 		usecase.NewDeviceUsecase,
