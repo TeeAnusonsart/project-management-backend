@@ -10,15 +10,15 @@ import (
     mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-type mqttDeviceCommander struct {
+type MQTTDeviceCommander struct {
     client mqtt.Client
 }
 
 func NewMQTTDeviceCommander(client mqtt.Client) domain.DeviceCommander {
-    return &mqttDeviceCommander{client: client}
+    return &MQTTDeviceCommander{client: client}
 }
 
-func (m *mqttDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCommand) (*domain.CommandResponse, error) {
+func (m *MQTTDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCommand) (*domain.CommandResponse, error) {
     replyTopic := fmt.Sprintf("devices/reply/%s", cmd.CorrelationID)
     ch := make(chan domain.CommandResponse, 1)
 

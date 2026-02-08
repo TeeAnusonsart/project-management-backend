@@ -9,17 +9,32 @@ import (
 type DeviceUsecase interface {
 	RegisterDevice(device *domain.Device) error
 	// RecordSensorData(data *domain.MonitorData) error
+	ListDevices() ([]*domain.Device, error)
+	GetDevice(id uint) (*domain.Device, error)
+	UpdateDevice(id uint, name string) error
+	PairDevice(id uint, deviceKey string) error
+	UnpairDevice(id uint) error
 }
 
 type deviceUsecase struct {
 	repo              domain.DeviceRepository
 	capabilityRepo domain.CapabilityRepository
 	widgetRepo     domain.WidgetRepository
+
 }
 
-func NewDeviceUsecase(r domain.DeviceRepository, cuc CapabilityUsecase, wuc WidgetUsecase) DeviceUsecase {
-	return &deviceUsecase{repo: r, capabilityRepo: cuc, widgetRepo: wuc}
+func NewDeviceUsecase(
+    r domain.DeviceRepository,
+    cr domain.CapabilityRepository,
+    wr domain.WidgetRepository,
+) DeviceUsecase {
+    return &deviceUsecase{
+        repo:           r,
+        capabilityRepo: cr,
+        widgetRepo:     wr,
+    }
 }
+
 
 func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
 	// if device.DeviceID == "" {
@@ -53,3 +68,23 @@ func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
 // func (u *deviceUsecase) RecordSensorData(data *domain.MonitorData) error {
 // 	return u.repo.CreateMonitorData(data)
 // }
+
+func (u *deviceUsecase) ListDevices() ([]*domain.Device, error) {
+	return u.repo.GetAll()
+}
+
+func (u *deviceUsecase) GetDevice(id uint) (*domain.Device, error) {
+	return u.repo.GetByID(id)
+}
+
+func (u *deviceUsecase) UpdateDevice(id uint, name string) error {
+	return u.repo.UpdateName(id, name)
+}
+
+func (u *deviceUsecase) PairDevice(id uint, deviceKey string) error {
+	return u.repo.Pair(id, deviceKey)
+}
+
+func (u *deviceUsecase) UnpairDevice(id uint) error {
+	return u.repo.Unpair(id)
+}

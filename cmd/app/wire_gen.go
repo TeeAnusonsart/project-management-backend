@@ -7,18 +7,45 @@
 package main
 
 import (
+	"github.com/eclipse/paho.mqtt.golang"
 	"gorm.io/gorm"
 	"project-home-iot/internal/auth"
+	"project-home-iot/internal/core/usecase"
+	gorm2 "project-home-iot/internal/infrastructure/gorm"
+	"project-home-iot/internal/infrastructure/http"
+	mqtt2 "project-home-iot/internal/infrastructure/mqtt"
 )
 
 // Injectors from wire.go:
 
-func InitializeApp(db *gorm.DB) *AppHandlers {
+func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	repository := auth.NewRepository(db)
 	authService := auth.NewService(repository)
 	authHandler := auth.NewAuthHandler(authService)
+	deviceRepository := gorm2.NewDeviceRepository(db)
+	capabilityRepository := gorm2.NewCapabilityRepository(db)
+	widgetRepository := gorm2.NewWidgetRepository(db)
+	deviceUsecase := usecase.NewDeviceUsecase(deviceRepository, capabilityRepository, widgetRepository)
+	deviceHandler := http.NewDeviceHandler(deviceUsecase)
+	deviceCommander := mqtt2.NewMQTTDeviceCommander(client)
+	recorderRepository := gorm2.NewRecorderRepository(db)
+	commandUsecase := usecase.NewCommandUsecase(deviceRepository, widgetRepository, deviceCommander, recorderRepository)
+	commandHandler := http.NewCommandHandler(commandUsecase)
+	roomRepository := gorm2.NewRoomRepository(db)
+	roomUsecase := usecase.NewRoomUsecase(roomRepository)
+	roomHandler := http.NewRoomHandler(roomUsecase)
+	widgetUsecase := usecase.NewWidgetUsecase(widgetRepository)
+	widgetHandler := http.NewWidgetHandler(widgetUsecase)
+	userRepository := gorm2.NewUserRepository(db)
+	userUsecase := usecase.NewUserUsecase(userRepository)
+	userHandler := http.NewUserHandler(userUsecase)
 	appHandlers := &AppHandlers{
-		Auth: authHandler,
+		Auth:    authHandler,
+		Device:  deviceHandler,
+		Command: commandHandler,
+		Room:    roomHandler,
+		Widget:  widgetHandler,
+		User:    userHandler,
 	}
 	return appHandlers
 }
@@ -26,5 +53,10 @@ func InitializeApp(db *gorm.DB) *AppHandlers {
 // wire.go:
 
 type AppHandlers struct {
-	Auth *auth.AuthHandler
+	Auth    *auth.AuthHandler
+	Device  *http.DeviceHandler
+	Command *http.CommandHandler
+	Room    *http.RoomHandler
+	Widget  *http.WidgetHandler
+	User    *http.UserHandler
 }

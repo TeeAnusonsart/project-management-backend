@@ -10,6 +10,9 @@ type Device struct {
 	DeviceKey  string
 	DeviceType string
 	Topic      string
+	RoomID *uint
+	Room   *Room `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+
 
 	Widgets    []Widget `gorm:"foreignKey:DeviceID"`
 
