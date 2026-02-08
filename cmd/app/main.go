@@ -15,9 +15,13 @@ func main() {
 	}
 
 	db := database.ConnectDB()
-	db.AutoMigrate(&models.Device{})
-	db.AutoMigrate(&models.Capability{})
-	db.AutoMigrate(&models.Widget{})
+	db.AutoMigrate(
+		&models.User{},
+		&models.Room{},
+		&models.Device{},
+		&models.Capability{},
+		&models.Widget{},
+	)
 
 	opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883")
 
@@ -31,6 +35,8 @@ func main() {
 
 	app := fiber.New()
 
+	app.Static("/uploads", "./uploads")
+	
 	SetupRoutes(app, handlers)
 
 	fmt.Println("Server is starting on :3000...")

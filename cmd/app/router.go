@@ -12,6 +12,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 
 	api := app.Group("/api")
 
+	// authen
 	authGroup := api.Group("/auth")
 	authGroup.Post("/login", handlers.Auth.Login)
 	authGroup.Post("/register", handlers.Auth.Register)
@@ -23,6 +24,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 		})
 	})
 
+	// device
 	deviceGroup := api.Group("/devices")
 	deviceGroup.Get("/", handlers.Device.ListDevices)
 	deviceGroup.Get("/:device_id", handlers.Device.GetDevice)
@@ -30,5 +32,37 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	deviceGroup.Post("/:device_id/pair", handlers.Device.PairDevice)
 	deviceGroup.Post("/:device_id/unpair", handlers.Device.UnpairDevice)
 
-	api.Post("/widgets/:widgetId/command", handlers.Command.SendCommand)
+	// room
+	roomGroup := api.Group("/rooms")
+	roomGroup.Get("/", handlers.Room.ListRooms)
+	roomGroup.Post("/", handlers.Room.CreateRoom)
+	roomGroup.Get("/:room_id", handlers.Room.GetRoom)
+	roomGroup.Put("/:room_id", handlers.Room.UpdateRoom)
+	roomGroup.Delete("/:room_id", handlers.Room.DeleteRoom)
+
+	roomGroup.Post("/:room_id/devices", handlers.Room.AddDevice)
+	roomGroup.Get("/:room_id/devices", handlers.Room.ListDevices)
+
+	// widget
+	widgetGroup := api.Group("/widgets")
+
+	widgetGroup.Get("/", handlers.Widget.ListWidgets)
+	widgetGroup.Get("/:widget_id", handlers.Widget.GetWidget)
+	widgetGroup.Put("/:widget_id", handlers.Widget.UpdateWidget)
+	widgetGroup.Patch("/:widget_id/status", handlers.Widget.ChangeStatus)
+	widgetGroup.Delete("/:widget_id", handlers.Widget.DeleteWidget)
+
+	widgetGroup.Post("/", handlers.Widget.CreateWidget)
+	widgetGroup.Post("/:widgetId/command", handlers.Command.SendCommand)
+	widgetGroup.Patch("/order", handlers.Widget.ChangeOrder)
+
+	// user
+	userGroup := api.Group("/users")
+
+	userGroup.Get("/", handlers.User.ListUsers)
+	userGroup.Post("/", handlers.User.CreateUser)
+	userGroup.Get("/:user_id", handlers.User.GetUser)
+	userGroup.Delete("/:user_id", handlers.User.DeleteUser)
+	userGroup.Post("/:user_id/change-password", handlers.User.ChangePassword)
+	userGroup.Post("/:user_id/upload-profile", handlers.User.UploadProfile)
 }

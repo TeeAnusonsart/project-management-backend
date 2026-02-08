@@ -20,34 +20,50 @@ type AppHandlers struct {
 	Auth    *auth.AuthHandler
 	Device  *httpHandler.DeviceHandler
 	Command *httpHandler.CommandHandler
+    Room    *httpHandler.RoomHandler
+    Widget  *httpHandler.WidgetHandler
+    User *httpHandler.UserHandler
 }
 
 func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	wire.Build(
-    auth.ProviderSet,
+		// auth
+		auth.ProviderSet,
 
-    gormRepo.NewDeviceRepository,
-    gormRepo.NewCapabilityRepository,
-    gormRepo.NewWidgetRepository,
+		// repo
+		gormRepo.NewDeviceRepository,
+		gormRepo.NewCapabilityRepository,
+		gormRepo.NewWidgetRepository,
+		gormRepo.NewRoomRepository,
+        gormRepo.NewUserRepository,
 
-    wire.Bind(new(domain.DeviceRepository), new(*gormRepo.DeviceRepository)),
-    wire.Bind(new(domain.CapabilityRepository), new(*gormRepo.CapabilityRepository)),
-    wire.Bind(new(domain.WidgetRepository), new(*gormRepo.WidgetRepository)),
+		// bind
+		wire.Bind(new(domain.DeviceRepository), new(*gormRepo.DeviceRepository)),
+		wire.Bind(new(domain.CapabilityRepository), new(*gormRepo.CapabilityRepository)),
+		wire.Bind(new(domain.WidgetRepository), new(*gormRepo.WidgetRepository)),
+		wire.Bind(new(domain.RoomRepository), new(*gormRepo.RoomRepository)),
+        wire.Bind(new(domain.UserRepository), new(*gormRepo.UserRepository)),
 
-    usecase.NewCapabilityUsecase,
-    usecase.NewDeviceUsecase,
-    usecase.NewWidgetUsecase,
+		// uc
+		usecase.NewCapabilityUsecase,
+		usecase.NewDeviceUsecase,
+		usecase.NewWidgetUsecase,
+		usecase.NewRoomUsecase,
+        usecase.NewUserUsecase,
 
-    mqttInfra.NewMQTTDeviceCommander,
+		// mqtt
+		mqttInfra.NewMQTTDeviceCommander,
+		usecase.NewCommandUsecase,
 
-    usecase.NewCommandUsecase,
+		// handler
+		httpHandler.NewDeviceHandler,
+		httpHandler.NewCommandHandler,
+		httpHandler.NewRoomHandler,
+        httpHandler.NewWidgetHandler,
+        httpHandler.NewUserHandler,
 
-    httpHandler.NewDeviceHandler,
-    httpHandler.NewCommandHandler,
-
-    wire.Struct(new(AppHandlers), "*"),
-)
-
+		wire.Struct(new(AppHandlers), "*"),
+	)
 
 	return &AppHandlers{}
 }
