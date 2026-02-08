@@ -50,10 +50,11 @@ func main() {
 
 	_ = sub.SubscribeSensor(handler.HandleSensorMessage)
 
+	handlers.MQTT.SubscribeDeviceRegistration(client)
 	app := fiber.New()
 
 	app.Static("/uploads", "./uploads")
-	
+
 	SetupRoutes(app, handlers)
 
 	fmt.Println("Server is starting on :3000...")

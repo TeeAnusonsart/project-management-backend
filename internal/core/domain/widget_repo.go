@@ -11,5 +11,6 @@ type WidgetRepository interface {
 
 	UpdateValue(widgetID uint, value uint) error
 	UpdateStatus(id uint, status string) error
-	ChangeOrder(widgetOrders []uint) error
+	ChangeOrder(roomID uint, widgetOrders []uint) error
+
 }

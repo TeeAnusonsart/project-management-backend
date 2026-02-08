@@ -4,7 +4,6 @@ import (
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/infrastructure/mappers"
 	"project-home-iot/internal/infrastructure/gorm/models"
-
 	"gorm.io/gorm"
 )
 
@@ -18,49 +17,44 @@ func NewDeviceRepository(db *gorm.DB) *DeviceRepository {
 
 func (r *DeviceRepository) CreateDevice(device *domain.Device) error {
 	model := mappers.DomainToDeviceModel(device)
-	if err := r.db.Create(model).Error; err != nil {
-        return err
-    }
-	device.ID = model.ID
-	return nil
+
+	return r.db.Create(model).Error
 }
 
 func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error) {
-	model := domain.Device{}
-	err := r.db.Table("devices").Select("devices.id as id, devices.device_name, devices.device_key, devices.device_type, devices.topic").
+	var model models.Device
+
+	err := r.db.
 		Joins("join widgets on widgets.device_id = devices.id").
 		Where("widgets.id = ?", widgetID).
 		First(&model).Error
+
 	if err != nil {
 		return nil, err
 	}
-	device := &domain.Device{
-		ID:         model.ID,
-		// DeviceID:   model.DeviceID,
-		DeviceName: model.DeviceName,
-		DeviceKey:  model.DeviceKey,
-		DeviceType: model.DeviceType,
-		Topic:      model.Topic,
-	}
-	return device, nil
+
+	return mappers.ModelToDomainDevice(&model), nil
 }
 
 // func (r *DeviceRepository) CreateMonitorData(data *domain.MonitorData) error {
 // 	return r.db.Create(data).Error
 // }
 
-func (r *DeviceRepository) GetAll() ([]*domain.Device, error) {
-	var models []models.Device
-	if err := r.db.Find(&models).Error; err != nil {
+func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
+	var result []*domain.DeviceSummary
+
+	err := r.db.
+		Table("devices").
+		Select("id, device_name, device_type").
+		Scan(&result).Error
+
+	if err != nil {
 		return nil, err
 	}
 
-	var devices []*domain.Device
-	for _, m := range models {
-		devices = append(devices, mappers.ModelToDomainDevice(&m))
-	}
-	return devices, nil
+	return result, nil
 }
+
 
 func (r *DeviceRepository) GetByID(id uint) (*domain.Device, error) {
 	var model models.Device
@@ -69,6 +63,23 @@ func (r *DeviceRepository) GetByID(id uint) (*domain.Device, error) {
 	}
 	return mappers.ModelToDomainDevice(&model), nil
 }
+
+func (r *DeviceRepository) GetSummaryByID(id uint) (*domain.DeviceSummary, error) {
+	var result domain.DeviceSummary
+
+	err := r.db.
+		Table("devices").
+		Select("id, device_name, device_type").
+		Where("id = ?", id).
+		First(&result).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 
 func (r *DeviceRepository) UpdateName(id uint, name string) error {
 	return r.db.Model(&models.Device{}).

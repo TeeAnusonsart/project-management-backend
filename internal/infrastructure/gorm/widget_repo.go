@@ -90,14 +90,21 @@ func (r *WidgetRepository) UpdateStatus(id uint, status string) error {
 		Update("widget_status", status).Error
 }
 
-func (r *WidgetRepository) ChangeOrder(widgetOrders []uint) error {
+func (r *WidgetRepository) ChangeOrder(roomID uint, widgetOrders []uint) error {
+
 	for index, widgetID := range widgetOrders {
-		if err := r.db.Model(&models.Widget{}).
-			Where("id = ?", widgetID).
-			Update("widget_order", index+1).Error; err != nil {
+
+		err := r.db.Model(&models.Widget{}).
+			Joins("JOIN devices ON devices.id = widgets.device_id").
+			Where("widgets.id = ?", widgetID).
+			Where("devices.room_id = ?", roomID).
+			Update("widget_order", index+1).Error
+
+		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
