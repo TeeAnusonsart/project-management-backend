@@ -15,6 +15,14 @@ func NewWidgetRepository(db *gorm.DB) *WidgetRepository {
 	return &WidgetRepository{db: db}
 }
 
+func (r*WidgetRepository) GetWidgetIdByDeviceAndCapability(deviceId uint, capabilityId uint) *domain.Widget {
+	var widgetModel models.Widget
+	r.db.Where("device_id = ? AND capability_id = ?", deviceId, capabilityId).
+		First(&widgetModel)
+	domainWidget := mappers.WidgetModelToDomain(&widgetModel)
+	return domainWidget
+}
+
 func (r *WidgetRepository) CreateWidget(widget *domain.Widget) error {
 	model := mappers.WidgetDomainToModel(widget)
 	return r.db.Create(model).Error

@@ -1,6 +1,7 @@
 package domain
 
 type WidgetRepository interface {
+	GetWidgetIdByDeviceAndCapability(deviceId uint, capabilityId uint) *Widget
 	CreateWidget(widget *Widget) error
 	Update(widget *Widget) error
 	Delete(id uint) error

@@ -10,7 +10,7 @@ func LogDomainToModel(d *domain.Log) *models.Log {
 		WidgetID:  d.WidgetID,
 		ActorType: d.ActorType,
 		Value:     d.Value,
-		EventType: d.EventTpye,
+		EventType: d.EventType,
 	}
 }
 
@@ -20,6 +20,6 @@ func LogModelToDomain(m *models.Log) *domain.Log {
 		WidgetID:  m.WidgetID,
 		ActorType: m.ActorType,
 		Value:     m.Value,
-		EventTpye: m.EventType,
+		EventType: m.EventType,
 	}
 }
