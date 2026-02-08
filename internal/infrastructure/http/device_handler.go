@@ -24,15 +24,6 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"data": devices})
 }
 
-func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
-	devices, err := h.usecase.ListDevices()
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(fiber.Map{"data": devices})
-}
-
 func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
 

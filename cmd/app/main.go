@@ -19,7 +19,8 @@ func main() {
 	db.AutoMigrate(&models.Capability{})
 	db.AutoMigrate(&models.Widget{})
 
-	opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883")
+	opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883")
+
 	client := mqttlib.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {

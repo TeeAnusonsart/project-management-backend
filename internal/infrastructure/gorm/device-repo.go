@@ -3,6 +3,7 @@ package gorm
 import (
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/infrastructure/mappers"
+	"project-home-iot/internal/infrastructure/gorm/models"
 
 	"gorm.io/gorm"
 )

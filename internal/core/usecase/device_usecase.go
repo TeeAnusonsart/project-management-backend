@@ -61,21 +61,21 @@ func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
 // }
 
 func (u *deviceUsecase) ListDevices() ([]*domain.Device, error) {
-	return u.deviceRepo.GetAll()
+	return u.repo.GetAll()
 }
 
 func (u *deviceUsecase) GetDevice(id uint) (*domain.Device, error) {
-	return u.deviceRepo.GetByID(id)
+	return u.repo.GetByID(id)
 }
 
 func (u *deviceUsecase) UpdateDevice(id uint, name string) error {
-	return u.deviceRepo.UpdateName(id, name)
+	return u.repo.UpdateName(id, name)
 }
 
 func (u *deviceUsecase) PairDevice(id uint, deviceKey string) error {
-	return u.deviceRepo.Pair(id, deviceKey)
+	return u.repo.Pair(id, deviceKey)
 }
 
 func (u *deviceUsecase) UnpairDevice(id uint) error {
-	return u.deviceRepo.Unpair(id)
+	return u.repo.Unpair(id)
 }
