@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"project-home-iot/internal/core/domain"
+    "fmt"
 
 )
 
@@ -41,6 +42,7 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {
     }
     u.recorder.RecordLog(cmd.WidgetID, "command", cmd.Value)
 
+    fmt.Printf("✅ Command executed successfully: %+v\n", cmd.Value)
     return u.widgetRepository.UpdateValue(cmd.WidgetID, cmd.Value)
 }
 
