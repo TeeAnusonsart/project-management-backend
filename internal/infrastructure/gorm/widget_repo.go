@@ -40,7 +40,6 @@ func (r *WidgetRepository) FindAll() ([]*domain.Widget, error) {
 	err := r.db.
 		Preload("Device").
 		Preload("Capability").
-		Where("widget_status = ?", "include").
 		Order("widget_order asc").
 		Find(&widgetModels).Error
 
@@ -70,6 +69,29 @@ func (r *WidgetRepository) FindByID(id uint) (*domain.Widget, error) {
 	}
 
 	return mappers.WidgetModelToDomain(&widgetModel), nil
+}
+
+func (r *WidgetRepository) FindByRoomID(roomID uint) ([]*domain.Widget, error) {
+	var widgetModels []models.Widget
+
+	err := r.db.
+		Joins("JOIN devices ON devices.id = widgets.device_id").
+		Where("devices.room_id = ?", roomID).
+		Preload("Device").
+		Preload("Capability").
+		Order("widget_order asc").
+		Find(&widgetModels).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*domain.Widget
+	for _, m := range widgetModels {
+		result = append(result, mappers.WidgetModelToDomain(&m))
+	}
+
+	return result, nil
 }
 
 func (r *WidgetRepository) Delete(id uint) error {

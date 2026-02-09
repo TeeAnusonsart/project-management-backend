@@ -40,7 +40,6 @@ func (m *MQTTPairCommander) RequestPair(deviceID uint, deviceKey string) error {
 	}
 
 	payload := map[string]interface{}{
-		"device_id":  deviceID,
 		"device_key": deviceKey,
 	}
 
