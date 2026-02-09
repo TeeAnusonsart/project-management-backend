@@ -104,7 +104,7 @@ func (u *deviceUsecase) PairDevice(id uint, deviceKey string) error {
 		widget := &domain.Widget{
 			DeviceID:      device.ID,
 			CapabilityID:  cap.ID,
-			Widget_status: "inactive",
+			WidgetStatus: "inactive",
 		}
 
 		if err := u.widgetRepo.CreateWidget(widget); err != nil {
