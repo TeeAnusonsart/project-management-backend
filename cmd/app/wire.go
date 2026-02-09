@@ -24,6 +24,8 @@ type AppHandlers struct {
     Widget  *httpHandler.WidgetHandler
     User *httpHandler.UserHandler
     MQTT *mqttInfra.MQTTHandler
+	SensorSubscriber *mqttInfra.SensorSubscriber
+	SensorHandler *mqttInfra.SensorHandler
 }
 
 func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
@@ -38,6 +40,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		gormRepo.NewRoomRepository,
         gormRepo.NewUserRepository,
 		gormRepo.NewRecorderRepository,
+	
 
 		// bind
 		wire.Bind(new(domain.DeviceRepository), new(*gormRepo.DeviceRepository)),
@@ -53,10 +56,15 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		usecase.NewRoomUsecase,
         usecase.NewUserUsecase,
         usecase.NewCommandUsecase,
+		usecase.NewRecordLogUsecase,
         
 		// mqtt
 		mqttInfra.NewMQTTDeviceCommander,
         mqttInfra.NewMQTTPairCommander,
+		mqttInfra.NewSensorSubscriber,
+		mqttInfra.NewSensorHandler,
+
+
 
 		// handler
 		httpHandler.NewDeviceHandler,

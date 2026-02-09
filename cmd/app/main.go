@@ -9,9 +9,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 
-	"project-home-iot/internal/core/usecase"
-	"project-home-iot/internal/infrastructure/gorm"
-	"project-home-iot/internal/infrastructure/mqtt"
+	// "project-home-iot/internal/core/usecase"
+	// "project-home-iot/internal/infrastructure/gorm"
+	// "project-home-iot/internal/infrastructure/mqtt"
 )
 
 func main() {
@@ -41,16 +41,17 @@ func main() {
 
 	handlers := InitializeApp(db, client)
 
-	recorderRepo := gorm.NewRecorderRepository(db)
-	widgetRepo := gorm.NewWidgetRepository(db)
-	recordLogUC := usecase.NewRecordLogUsecase(recorderRepo,widgetRepo)
+	// recorderRepo := gorm.NewRecorderRepository(db)
+	// widgetRepo := gorm.NewWidgetRepository(db)
+	// recordLogUC := usecase.NewRecordLogUsecase(recorderRepo,widgetRepo)
 
-	handler := mqtt.NewSensorHandler(recordLogUC)
-	sub := mqtt.NewSubscriber(client)
+	// handler := mqtt.NewSensorHandler(recordLogUC)
+	// sub := mqtt.NewSubscriber(client)
 
-	_ = sub.SubscribeSensor(handler.HandleSensorMessage)
+	// _ = sub.SubscribeSensor(handler.HandleSensorMessage)
 
 	handlers.MQTT.SubscribeDeviceRegistration(client)
+	_ = handlers.SensorSubscriber.SubscribeSensor(handlers.SensorHandler.HandleSensorMessage)
 	app := fiber.New()
 
 	app.Static("/uploads", "./uploads")

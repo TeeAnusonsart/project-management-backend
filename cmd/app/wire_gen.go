@@ -41,14 +41,19 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	userUsecase := usecase.NewUserUsecase(userRepository)
 	userHandler := http.NewUserHandler(userUsecase)
 	mqttHandler := mqtt2.NewMQTTHandler(deviceUsecase, widgetUsecase)
+	sensorSubscriber := mqtt2.NewSensorSubscriber(client)
+	recordLogUsecase := usecase.NewRecordLogUsecase(recorderRepository, widgetRepository)
+	sensorHandler := mqtt2.NewSensorHandler(recordLogUsecase)
 	appHandlers := &AppHandlers{
-		Auth:    authHandler,
-		Device:  deviceHandler,
-		Command: commandHandler,
-		Room:    roomHandler,
-		Widget:  widgetHandler,
-		User:    userHandler,
-		MQTT:    mqttHandler,
+		Auth:             authHandler,
+		Device:           deviceHandler,
+		Command:          commandHandler,
+		Room:             roomHandler,
+		Widget:           widgetHandler,
+		User:             userHandler,
+		MQTT:             mqttHandler,
+		SensorSubscriber: sensorSubscriber,
+		SensorHandler:    sensorHandler,
 	}
 	return appHandlers
 }
@@ -56,11 +61,13 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 // wire.go:
 
 type AppHandlers struct {
-	Auth    *auth.AuthHandler
-	Device  *http.DeviceHandler
-	Command *http.CommandHandler
-	Room    *http.RoomHandler
-	Widget  *http.WidgetHandler
-	User    *http.UserHandler
-	MQTT    *mqtt2.MQTTHandler
+	Auth             *auth.AuthHandler
+	Device           *http.DeviceHandler
+	Command          *http.CommandHandler
+	Room             *http.RoomHandler
+	Widget           *http.WidgetHandler
+	User             *http.UserHandler
+	MQTT             *mqtt2.MQTTHandler
+	SensorSubscriber *mqtt2.SensorSubscriber
+	SensorHandler    *mqtt2.SensorHandler
 }
