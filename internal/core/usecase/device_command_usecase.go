@@ -7,7 +7,7 @@ import (
 )
 
 type CommandUsecase interface {
-	SendCommand(cmd *domain.DeviceCommand) error
+	SendCommand(cmd *domain.DeviceCommand,widgetID uint,correlationID string) error
 }
 
 type commandUsecase struct {
@@ -26,13 +26,13 @@ func NewCommandUsecase(dr domain.DeviceRepository, wr domain.WidgetRepository, d
     }
 }
 
-func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {
-    device, err := u.deviceRepo.FindByWidgetID(cmd.WidgetID)
+func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,correlationID string) error {
+    device, err := u.deviceRepo.FindByWidgetID(widgetID)
     if err != nil {
         return err
     }
 
-    resp, err := u.commander.RequestCommand(device.Topic, cmd)
+    resp, err := u.commander.RequestCommand(device.Topic, cmd,correlationID)
     if err != nil {
         return err
     }
@@ -40,10 +40,10 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {
     if resp.Status != "success" {
         return err
     }
-    u.recorder.RecordLog(cmd.WidgetID, "command", cmd.Value)
+    u.recorder.RecordLog(widgetID, "command", cmd.Value)
 
     fmt.Printf("✅ Command executed successfully: %+v\n", cmd.Value)
-    return u.widgetRepository.UpdateValue(cmd.WidgetID, cmd.Value)
+    return u.widgetRepository.UpdateValue(widgetID, cmd.Value)
 }
 
 // func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {

@@ -37,14 +37,13 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 	correlationID := uuid.NewString()
 
 	cmd := &domain.DeviceCommand{
-		WidgetID:      uint(widgetID),
-		CapabilityID:       req.CapabilityID,
+		CapabilityID:       req.CapabilityID, 
 		Value:         req.Value,
-		CorrelationID: correlationID,
 		ReplyTopic:    "devices/reply/" + correlationID,
 	}
 
-	if err := h.commandUsecase.SendCommand(cmd); err != nil {
+
+	if err := h.commandUsecase.SendCommand(cmd,uint(widgetID),correlationID); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 

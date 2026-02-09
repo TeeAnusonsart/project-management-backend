@@ -8,6 +8,7 @@ import (
     "project-home-iot/internal/core/domain"
     dto "project-home-iot/internal/infrastructure/mqtt/dtos"
     mqtt "github.com/eclipse/paho.mqtt.golang"
+    "project-home-iot/internal/infrastructure/mappers"
 )
 
 type MQTTDeviceCommander struct {
@@ -18,8 +19,8 @@ func NewMQTTDeviceCommander(client mqtt.Client) domain.DeviceCommander {
     return &MQTTDeviceCommander{client: client}
 }
 
-func (m *MQTTDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCommand) (*domain.CommandResponse, error) {
-    replyTopic := fmt.Sprintf("devices/reply/%s", cmd.CorrelationID)
+func (m *MQTTDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCommand,correlationID string) (*domain.CommandResponse, error) {
+    replyTopic := fmt.Sprintf("devices/reply/%s", correlationID)
     ch := make(chan domain.CommandResponse, 1)
 
     // 1. Subscribe รอคำตอบ
@@ -40,7 +41,8 @@ func (m *MQTTDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCom
     }
 
     // 2. Publish คำสั่งออกไป
-    payload, _ := json.Marshal(cmd)
+    payloadDTO := mappers.DeviceCommandDomainToPayload(cmd)
+    payload, _ := json.Marshal(payloadDTO)
     tokenPub := m.client.Publish(topic, 1, false, payload)
     if tokenPub.Wait() && tokenPub.Error() != nil {
         m.client.Unsubscribe(replyTopic)
