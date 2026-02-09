@@ -26,7 +26,7 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		Command string `json:"command"`
+		CapabilityID string `json:"capability_id"`
 		Value   uint   `json:"value"`
 	}
 
@@ -38,7 +38,7 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 
 	cmd := &domain.DeviceCommand{
 		WidgetID:      uint(widgetID),
-		Command:       req.Command,
+		CapabilityID:       req.CapabilityID,
 		Value:         req.Value,
 		CorrelationID: correlationID,
 		ReplyTopic:    "devices/reply/" + correlationID,

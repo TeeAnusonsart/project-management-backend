@@ -2,7 +2,7 @@ package domain
 
 type DeviceCommand struct {
 	WidgetID       uint
-	Command        string
+	CapabilityID        string
 	Value          uint
 	ReplyTopic     string
 	CorrelationID  string
