@@ -36,9 +36,12 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {
         return err
     }
 
-    u.recorder.RecordLog(cmd.WidgetID, "command", resp.Value)
+    if resp.Status != "success" {
+        return err
+    }
+    u.recorder.RecordLog(cmd.WidgetID, "command", cmd.Value)
 
-    return u.widgetRepository.UpdateValue(cmd.WidgetID, resp.Value)
+    return u.widgetRepository.UpdateValue(cmd.WidgetID, cmd.Value)
 }
 
 // func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {
