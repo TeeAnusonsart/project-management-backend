@@ -24,11 +24,9 @@ func (h *SensorHandler) HandleSensorMessage(
 	c mqtt.Client,
 	m mqtt.Message,
 ) {
-	// topic: /device/{deviceId}/sensor/{eventType}
 	topic := m.Topic()
 	parts := strings.Split(topic, "/")
 
-	// extract routing info
 	deviceIDStr := parts[2]
 
 	deviceID, err := strconv.ParseUint(deviceIDStr, 10, 64)

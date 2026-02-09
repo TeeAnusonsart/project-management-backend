@@ -28,8 +28,7 @@ func (m *MQTTDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCom
         if err := json.Unmarshal(msg.Payload(), &respDTO); err == nil {
             // Map DTO กลับเป็น Domain Model
             ch <- domain.CommandResponse{
-                CorrelationID: respDTO.CorrelationID,
-                Value:         respDTO.Value,
+                Status: respDTO.Status,
                 // Status, Message เพิ่มเติมตามต้องการ
             }
         }

@@ -2,15 +2,15 @@ package mqtt
 
 import mqtt "github.com/eclipse/paho.mqtt.golang"
 
-type Subscriber struct {
+type SensorSubscriber struct {
 	client mqtt.Client
 }
 
-func NewSubscriber(client mqtt.Client) *Subscriber {
-	return &Subscriber{client: client}
+func NewSensorSubscriber(client mqtt.Client) *SensorSubscriber {
+	return &SensorSubscriber{client: client}
 }
 
-func (s *Subscriber) SubscribeSensor(handler mqtt.MessageHandler) error {
+func (s *SensorSubscriber) SubscribeSensor(handler mqtt.MessageHandler) error {
 	token := s.client.Subscribe(
 		"/device/+/sensor",
 		1,

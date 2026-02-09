@@ -95,6 +95,23 @@ func (u *deviceUsecase) PairDevice(id uint, deviceKey string) error {
 		return err
 	}
 
+	caps := DeviceCapabilityMap[device.DeviceType]
+	for _, capType := range caps {
+		cap, err := u.capabilityRepo.FindByType(capType)
+		if err != nil {
+			return err
+		}
+		widget := &domain.Widget{
+			DeviceID:      device.ID,
+			CapabilityID:  cap.ID,
+			Widget_status: "inactive",
+		}
+
+		if err := u.widgetRepo.CreateWidget(widget); err != nil {
+			return err
+		}
+	}
+
 	return u.pairCommander.Subscribe(device.Topic)
 }
 
