@@ -12,7 +12,7 @@ func NewSensorSubscriber(client mqtt.Client) *SensorSubscriber {
 
 func (s *SensorSubscriber) SubscribeSensor(handler mqtt.MessageHandler) error {
 	token := s.client.Subscribe(
-		"/device/+/sensor",
+		"/devices/+/sensor",
 		1,
 		handler,
 	)

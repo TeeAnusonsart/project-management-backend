@@ -19,7 +19,7 @@ func NewMQTTPairCommander(client mqtt.Client) domain.PairCommander {
 
 func (m *MQTTPairCommander) RequestPair(deviceID uint, deviceKey string) error {
 	requestTopic := fmt.Sprintf("devices/%d/pair/request", deviceID)
-	replyTopic := fmt.Sprintf("devices/%d/pair/reply", deviceID)
+	replyTopic := fmt.Sprintf("devices/%d/pair/response", deviceID)
 
 	ch := make(chan string, 1)
 
@@ -53,7 +53,7 @@ func (m *MQTTPairCommander) RequestPair(deviceID uint, deviceKey string) error {
 
 	select {
 	case status := <-ch:
-		if status != "connected" {
+		if status != "success" {
 			return fmt.Errorf("pair failed")
 		}
 		return nil

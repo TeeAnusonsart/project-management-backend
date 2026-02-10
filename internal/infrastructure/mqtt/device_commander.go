@@ -19,7 +19,7 @@ func NewMQTTDeviceCommander(client mqtt.Client) domain.DeviceCommander {
 }
 
 func (m *MQTTDeviceCommander) RequestCommand(topic string, cmd *domain.DeviceCommand) (*domain.CommandResponse, error) {
-    replyTopic := fmt.Sprintf("devices/reply/%s", cmd.CorrelationID)
+    replyTopic := fmt.Sprintf("devices/%s/response", cmd.CorrelationID)
     ch := make(chan domain.CommandResponse, 1)
 
     // 1. Subscribe รอคำตอบ
