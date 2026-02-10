@@ -1,8 +1,7 @@
 package usecase
 
 import (
-	// "fmt"
-	"fmt"
+
 	"project-home-iot/internal/core/domain"
 )
 
@@ -48,23 +47,6 @@ func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
         return err
     }
 
-	fmt.Printf("Device created with ID: %d\n", device.ID)
-	caps := DeviceCapabilityMap[device.DeviceType]
-	for _, capType := range caps {
-		cap, err := u.capabilityRepo.FindByType(capType)
-		if err != nil {
-			return err
-		}
-		widget := &domain.Widget{
-			DeviceID:      device.ID,
-			CapabilityID:  cap.ID,
-			WidgetStatus: "inactive",
-		}
-
-		if err := u.widgetRepo.CreateWidget(widget); err != nil {
-			return err
-		}
-	}
 	return nil
 	// return u.repo.CreateDevice(device)
 }
