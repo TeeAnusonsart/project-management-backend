@@ -51,6 +51,7 @@ func main() {
 	// _ = sub.SubscribeSensor(handler.HandleSensorMessage)
 
 	handlers.MQTT.SubscribeDeviceRegistration(client)
+	client.Publish("xxx/y",0,false, "Hello MQTT")
 	_ = handlers.SensorSubscriber.SubscribeSensor(handlers.SensorHandler.HandleSensorMessage)
 	app := fiber.New()
 

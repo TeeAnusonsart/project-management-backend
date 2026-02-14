@@ -34,13 +34,11 @@ func (h *SensorHandler) HandleSensorMessage(
 		return
 	}
 
-	// parse payload
 	var payload dtos.SensorPayload
 	if err := json.Unmarshal(m.Payload(), &payload); err != nil {
 		return
 	}
 
-	// 🔥 call usecase (domain safe)
 	_ = h.recordLogUC.Execute(
 		uint(deviceID),
 		payload.CapabilityID,

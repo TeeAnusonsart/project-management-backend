@@ -12,10 +12,11 @@ import (
 
 type CommandHandler struct {
 	commandUsecase usecase.CommandUsecase
+	widgetUsecase  usecase.WidgetUsecase
 }
 
-func NewCommandHandler(uc usecase.CommandUsecase) *CommandHandler {
-	return &CommandHandler{commandUsecase: uc}
+func NewCommandHandler(uc usecase.CommandUsecase,wc usecase.WidgetUsecase) *CommandHandler {
+	return &CommandHandler{commandUsecase: uc,widgetUsecase: wc}
 }
 
 func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
@@ -26,24 +27,26 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		CapabilityID string `json:"capability_id"`
-		Value   uint   `json:"value"`
+		CapabilityID uint `json:"capability_id"`
+		Value        uint   `json:"value"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
+	widget, err := h.widgetUsecase.GetWidget(uint(widgetID))
+
 	correlationID := uuid.NewString()
 
 	cmd := &domain.DeviceCommand{
-		CapabilityID:       req.CapabilityID, 
-		Value:         req.Value,
-		ReplyTopic:    "devices/reply/" + correlationID,
+		CapabilityType: widget.Capability.CapabilityType,
+		ControlType:    widget.Capability.ControlType,
+		Value:          req.Value,
+		ReplyTopic:     "devices/reply/" + correlationID,
 	}
 
-
-	if err := h.commandUsecase.SendCommand(cmd,uint(widgetID),correlationID); err != nil {
+	if err := h.commandUsecase.SendCommand(cmd, uint(widgetID), correlationID); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 

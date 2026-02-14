@@ -7,7 +7,8 @@ import (
 
 func DeviceCommandDomainToPayload(d *domain.DeviceCommand) *dtos.DeviceCommand {
 	return &dtos.DeviceCommand{
-		CapabilityID: d.CapabilityID,
+		CapabilityType: d.CapabilityType,
+		ControlType: d.ControlType,
 		Value:        d.Value,
 		ReplyTopic:   d.ReplyTopic,
 	}

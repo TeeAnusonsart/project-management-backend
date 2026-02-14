@@ -4,3 +4,15 @@ type Room struct {
 	ID   uint
 	Name string
 }
+
+
+type RoomRepository interface {
+	Create(room *Room) error
+	FindAll() ([]*Room, error)
+	FindByID(id uint) (*Room, error)
+	Update(room *Room) error
+	Delete(id uint) error
+
+	AddDevice(roomID uint, deviceID uint) error
+	ListDeviceSummaries(roomID uint) ([]*DeviceSummary, error)
+}

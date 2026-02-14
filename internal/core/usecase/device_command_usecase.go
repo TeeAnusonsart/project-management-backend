@@ -1,9 +1,8 @@
 package usecase
 
 import (
+	"fmt"
 	"project-home-iot/internal/core/domain"
-    "fmt"
-
 )
 
 type CommandUsecase interface {
@@ -32,7 +31,8 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,cor
         return err
     }
 
-    resp, err := u.commander.RequestCommand(device.Topic, cmd,correlationID)
+    fmt.Printf("🔄 Sending command to device ID %d for widget ID %d\n", device.ID, widgetID)
+    resp, err := u.commander.RequestCommand(device.ID, cmd,correlationID)
     if err != nil {
         return err
     }
@@ -42,7 +42,7 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,cor
     }
     u.recorder.RecordLog(widgetID, "command", cmd.Value)
 
-    fmt.Printf("✅ Command executed successfully: %+v\n", cmd.Value)
+
     return u.widgetRepository.UpdateValue(widgetID, cmd.Value)
 }
 
