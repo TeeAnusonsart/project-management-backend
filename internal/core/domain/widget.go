@@ -5,7 +5,7 @@ type Widget struct {
 
 	WidgetOrder  uint
 	WidgetStatus string
-	Value        uint
+	Value        string
 
 	DeviceID     string
 	CapabilityID uint
@@ -18,7 +18,7 @@ type Log struct {
 	ID        uint
 	WidgetID  uint
 	ActorType string
-	Value     uint
+	Value     string
 	EventType string
 }
 
@@ -33,7 +33,7 @@ type WidgetRepository interface {
 	FindByRoomID(roomID uint) ([]*Widget, error)
 	GetWidgetByStatus(status string) ([]*Widget, error)
 
-	UpdateValue(widgetID uint, value uint) error
+	UpdateValue(widgetID uint, value string) error
 	UpdateStatus(id uint, status string) error
 	ChangeOrder(roomID uint, widgetOrders []uint) error
 

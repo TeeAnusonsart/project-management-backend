@@ -9,7 +9,7 @@ import (
 type Widget struct {
 	gorm.Model
 	WidgetStatus string
-	Value         uint
+	Value         string
 	WidgetOrder   uint `gorm:"column:widget_order"`
 
 	CapabilityID  uint       `gorm:"not null"`
@@ -40,7 +40,7 @@ func (r *WidgetRepository) CreateWidget(widget *domain.Widget) error {
 	return r.db.Create(model).Error
 }
 
-func (r *WidgetRepository) UpdateValue(widgetID uint, value uint) error {
+func (r *WidgetRepository) UpdateValue(widgetID uint, value string) error {
 	return r.db.Model(&Widget{}).
 		Where("id = ?", widgetID).
 		Update("value", value).Error

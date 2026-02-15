@@ -71,7 +71,7 @@ func (h *WidgetHandler) CreateWidget(c *fiber.Ctx) error {
 		DeviceID:     req.DeviceID,
 		CapabilityID: req.CapabilityID,
 		WidgetStatus: req.WidgetStatus,
-		Value:        0,
+		Value:        "",
 		WidgetOrder:  0,
 	}
 
@@ -224,7 +224,7 @@ type WidgetResponse struct {
 	WidgetID     uint   `json:"widget_id"`
 	WidgetOrder  uint   `json:"widget_order"`
 	WidgetStatus string `json:"widget_status"`
-	Value        uint   `json:"value"`
+	Value        string   `json:"value"`
 
 	Device     DeviceDTO     `json:"device"`
 	Capability CapabilityDTO `json:"capability"`

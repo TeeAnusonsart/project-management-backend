@@ -11,7 +11,7 @@ import (
 
 type Log struct {
 	gorm.Model
-	Value     uint
+	Value     string
 	EventType string
 
 	WidgetID  uint       `gorm:"not null"`

@@ -28,7 +28,7 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 
 	var req struct {
 		CapabilityID uint `json:"capability_id"`
-		Value        uint   `json:"value"`
+		Value        string   `json:"value"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {

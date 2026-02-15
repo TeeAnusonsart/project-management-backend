@@ -43,7 +43,7 @@ func (m *MQTTDeviceCommander) RequestCommand(deviceId string, cmd *domain.Device
 		fmt.Printf("Error marshalling command payload: %v\n", err)
 		return nil, err
 	}
-	topic := fmt.Sprintf("devices/%s/commands", deviceId)
+	topic := fmt.Sprintf("devices/%s/command/request", deviceId)
 	tokenPub := m.client.Publish(topic, 1, false, payload)
 	if tokenPub.Wait() && tokenPub.Error() != nil {
 		m.client.Unsubscribe(replyTopic)
@@ -76,7 +76,7 @@ func DeviceCommandDomainToPayload(d *domain.DeviceCommand) *DeviceCommand {
 type DeviceCommand struct {
 	CapabilityType string `json:"capability_type"`
 	ControlType    string `json:"control_type"`
-	Value          uint   `json:"value"`
+	Value          string   `json:"value"`
 	ReplyTopic     string `json:"reply_topic"`
 }
 

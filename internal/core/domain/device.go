@@ -25,7 +25,7 @@ type DeviceSummary struct {
 type DeviceCommand struct {
 	CapabilityType        string
 	ControlType string
-	Value          uint
+	Value          string
 	ReplyTopic     string
 }
 
