@@ -50,6 +50,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	widgetGroup := api.Group("/widgets")
 
 	widgetGroup.Get("/", handlers.Widget.ListWidgets)
+	// widgetGroup.Get("/", handlers.Widget.GetWidgetByStatus)
 	widgetGroup.Get("/:widget_id", handlers.Widget.GetWidget)
 	widgetGroup.Put("/:widget_id", handlers.Widget.UpdateWidget)
 	widgetGroup.Patch("/:widget_id/status", handlers.Widget.ChangeStatus)

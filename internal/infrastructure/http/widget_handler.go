@@ -1,7 +1,6 @@
 package http
 
 import (
-
 	"strconv"
 
 	"project-home-iot/internal/core/domain"
@@ -21,7 +20,17 @@ func NewWidgetHandler(u usecase.WidgetUsecase) *WidgetHandler {
 }
 
 func (h *WidgetHandler) ListWidgets(c *fiber.Ctx) error {
-	widgets, err := h.usecase.ListWidgets()
+	status := c.Query("status")
+	var widgets []*domain.Widget
+	var err error
+
+	if status != "" {
+        widgets, err = h.usecase.GetWidgetByStatus(status)
+    } else {
+        widgets, err = h.usecase.ListWidgets()
+    }
+
+	// widgets, err := h.usecase.ListWidgets()
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -48,20 +57,6 @@ func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 	return c.JSON(httpmapper.ToWidgetResponse(w))
 }
 
-func (h *WidgetHandler) GetWidgetByStatus(c *fiber.Ctx) error {
-	status := c.Query("status")
-	widgets, err := h.usecase.GetWidgetByStatus(status)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	var response []dtos.WidgetResponse
-	for _, w := range widgets {
-		response = append(response, httpmapper.ToWidgetResponse(w))
-	}
-
-	return c.JSON(fiber.Map{"data": response})
-}
 
 func (h *WidgetHandler) CreateWidget(c *fiber.Ctx) error {
 	var req struct {
