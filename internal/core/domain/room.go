@@ -13,6 +13,6 @@ type RoomRepository interface {
 	Update(room *Room) error
 	Delete(id uint) error
 
-	AddDevice(roomID uint, deviceID uint) error
+	AddDevice(roomID uint, deviceID string) error
 	ListDeviceSummaries(roomID uint) ([]*DeviceSummary, error)
 }

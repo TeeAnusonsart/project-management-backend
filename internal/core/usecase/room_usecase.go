@@ -9,7 +9,7 @@ type RoomUsecase interface {
 	UpdateRoom(id uint, name string) error
 	DeleteRoom(id uint) error
 
-	AddDeviceToRoom(roomID uint, deviceID uint) error
+	AddDeviceToRoom(roomID uint, deviceID string) error
 	ListDevicesInRoom(roomID uint) ([]*domain.DeviceSummary, error)
 }
 
@@ -47,7 +47,7 @@ func (u *roomUsecase) DeleteRoom(id uint) error {
 	return u.roomRepo.Delete(id)
 }
 
-func (u *roomUsecase) AddDeviceToRoom(roomID uint, deviceID uint) error {
+func (u *roomUsecase) AddDeviceToRoom(roomID uint, deviceID string) error {
 	return u.roomRepo.AddDevice(roomID, deviceID)
 }
 

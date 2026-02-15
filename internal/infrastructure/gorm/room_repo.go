@@ -73,7 +73,7 @@ func (r *RoomRepository) Delete(id uint) error {
 }
 
 
-func (r *RoomRepository) AddDevice(roomID uint, deviceID uint) error {
+func (r *RoomRepository) AddDevice(roomID uint, deviceID string) error {
 	return r.db.Model(&Device{}).
 		Where("device_id = ?", deviceID).
 		Update("room_id", roomID).Error

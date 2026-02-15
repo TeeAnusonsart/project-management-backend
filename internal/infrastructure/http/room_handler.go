@@ -137,7 +137,7 @@ type UpdateRoomRequest struct {
 }
 
 type AddDeviceToRoomRequest struct {
-    DeviceID uint `json:"device_id"`
+    DeviceID string `json:"device_id"`
 }
 
 type RoomResponse struct {
