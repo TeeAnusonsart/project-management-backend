@@ -42,6 +42,7 @@ func WidgetModelToDomain(m *models.Widget) *domain.Widget {
 		widget.Capability = &domain.Capability{
 			ID:             m.Capability.ID,
 			CapabilityType: m.Capability.CapabilityType,
+			ControlType:    m.Capability.ControlType,
 		}
 	}
 

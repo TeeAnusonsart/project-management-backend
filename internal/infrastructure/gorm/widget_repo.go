@@ -113,7 +113,6 @@ func (r *WidgetRepository) UpdateStatus(id uint, status string) error {
 }
 
 func (r *WidgetRepository) ChangeOrder(roomID uint, widgetOrders []uint) error {
-
 	for index, widgetID := range widgetOrders {
 
 		err := r.db.Model(&models.Widget{}).
@@ -128,5 +127,24 @@ func (r *WidgetRepository) ChangeOrder(roomID uint, widgetOrders []uint) error {
 	}
 
 	return nil
+}
+
+func (r *WidgetRepository) GetWidgetByStatus(status string) ([]*domain.Widget, error) {
+	var widgetModels []models.Widget
+	err := r.db.
+		Where("widget_status = ?", status).
+		Preload("Device").
+		Preload("Capability").
+		Order("widget_order asc").
+		Find(&widgetModels).Error
+
+	if err != nil {
+		return nil, err
+	}
+	var result []*domain.Widget
+	for _, m := range widgetModels {
+		result = append(result, mappers.WidgetModelToDomain(&m))
+	}
+	return result, nil
 }
 

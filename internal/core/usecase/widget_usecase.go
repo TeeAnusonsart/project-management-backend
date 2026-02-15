@@ -9,6 +9,7 @@ type WidgetUsecase interface {
 
 	ListWidgets() ([]*domain.Widget, error)
 	GetWidget(id uint) (*domain.Widget, error)
+	GetWidgetByStatus(status string) ([]*domain.Widget, error)
 	ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error)
 
 	UpdateValue(widgetID uint, value uint) error
@@ -34,6 +35,10 @@ func (u *widgetUsecase) UpdateWidget(widget *domain.Widget) error {
 
 func (u *widgetUsecase) DeleteWidget(id uint) error {
 	return u.widgetRepo.Delete(id)
+}
+
+func (u *widgetUsecase) GetWidgetByStatus(status string) ([]*domain.Widget, error) {
+	return u.widgetRepo.GetWidgetByStatus(status)
 }
 
 func (u *widgetUsecase) ListWidgets() ([]*domain.Widget, error) {

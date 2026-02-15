@@ -27,6 +27,7 @@ func ToWidgetResponse(w *domain.Widget) dtos.WidgetResponse {
 		response.Capability = dtos.CapabilityDTO{
 			CapabilityID:   w.Capability.ID,
 			CapabilityType: w.Capability.CapabilityType,
+			ControlType:    w.Capability.ControlType,
 		}
 	}
 

@@ -48,6 +48,21 @@ func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 	return c.JSON(httpmapper.ToWidgetResponse(w))
 }
 
+func (h *WidgetHandler) GetWidgetByStatus(c *fiber.Ctx) error {
+	status := c.Query("status")
+	widgets, err := h.usecase.GetWidgetByStatus(status)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	var response []dtos.WidgetResponse
+	for _, w := range widgets {
+		response = append(response, httpmapper.ToWidgetResponse(w))
+	}
+
+	return c.JSON(fiber.Map{"data": response})
+}
+
 func (h *WidgetHandler) CreateWidget(c *fiber.Ctx) error {
 	var req struct {
 		DeviceID     string   `json:"device_id"`

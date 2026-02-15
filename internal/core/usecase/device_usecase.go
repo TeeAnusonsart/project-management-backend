@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"fmt"
 	"project-home-iot/internal/core/domain"
 )
 
@@ -37,9 +36,6 @@ func NewDeviceUsecase(
 }
 
 func (u *deviceUsecase) RegisterDevice(device *domain.Device) error {
-	// if device.DeviceID == "" {
-	// 	return fmt.Errorf("device id required")
-	// }
 	if err := device.Validate(); err != nil {
 		return err
 	}
@@ -87,10 +83,8 @@ func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
 		widget := &domain.Widget{
 			DeviceID:      device.DeviceID,
 			CapabilityID:  cap.ID,
-			WidgetStatus: "inactive",
+			WidgetStatus: "exclude",
 		}
-
-		fmt.Printf("Creating widget for device %s with capability %d\n", device.DeviceID, cap.ID)
 
 		if err := u.widgetRepo.CreateWidget(widget); err != nil {
 			return err
