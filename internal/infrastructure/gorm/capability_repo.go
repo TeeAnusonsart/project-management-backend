@@ -2,12 +2,17 @@ package gorm
 
 import (
 	"project-home-iot/internal/core/domain"
-	// "project-home-iot/internal/infrastructure/mappers"
-	"project-home-iot/internal/infrastructure/gorm/models"
-	"project-home-iot/internal/infrastructure/mappers"
 
 	"gorm.io/gorm"
 )
+
+type Capability struct {
+	gorm.Model
+	CapabilityType string
+	ControlType	string
+	Widgets        []Widget `gorm:"foreignKey:CapabilityID"`
+}
+
 
 type CapabilityRepository struct {
 	db *gorm.DB
@@ -18,7 +23,7 @@ func NewCapabilityRepository(db *gorm.DB) *CapabilityRepository {
 }
 
 func (r *CapabilityRepository) FindByType(capabilityType string) (*domain.Capability, error) {
-	var model models.Capability 
+	var model Capability 
 
 	err := r.db.
 		Where("capability_type = ?", capabilityType).
@@ -28,11 +33,11 @@ func (r *CapabilityRepository) FindByType(capabilityType string) (*domain.Capabi
 		return nil, err
 	}
 
-	return mappers.ModelToDomainCapability(&model), nil
+	return ModelToDomainCapability(&model), nil
 }
 
 func (r *CapabilityRepository) FindByTypeAndControl(capabilityType string, controlType string) (*domain.Capability, error) {
-	var model models.Capability
+	var model Capability
 	err := r.db.
 		Where("capability_type = ? AND control_type = ?", capabilityType, controlType).
 		First(&model).Error
@@ -41,5 +46,18 @@ func (r *CapabilityRepository) FindByTypeAndControl(capabilityType string, contr
 		return nil, err
 	}
 
-	return mappers.ModelToDomainCapability(&model), nil
+	return ModelToDomainCapability(&model), nil
+}
+
+func DomainToCapabilityModel(d *domain.Capability) *Capability {
+	return &Capability{
+		CapabilityType: d.CapabilityType,
+	}
+}
+
+func ModelToDomainCapability(m *Capability) *domain.Capability {
+	return &domain.Capability{
+		ID : m.ID,
+		CapabilityType: m.CapabilityType,
+	}
 }

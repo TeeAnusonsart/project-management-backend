@@ -1,12 +1,10 @@
 package http
 
 import (
-	"fmt"
 	"project-home-iot/internal/core/usecase"
-	"project-home-iot/internal/infrastructure/http/dtos"
-	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
-
+	"time"
 	"github.com/gofiber/fiber/v2"
+	"project-home-iot/internal/core/domain"
 )
 
 type DeviceHandler struct {
@@ -23,9 +21,9 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	var response []dtos.DeviceResponse
+	var response []DeviceResponse
 	for _, d := range devices {
-		response = append(response, httpmapper.ToDeviceResponse(d))
+		response = append(response, ToDeviceResponse(d))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
@@ -40,13 +38,13 @@ func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(httpmapper.ToDeviceResponse(device))
+	return c.JSON(ToDeviceResponse(device))
 }
 
 func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
 	id := c.Params("device_id")
 
-	var req dtos.UpdateDeviceRequest
+	var req UpdateDeviceRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -64,9 +62,7 @@ func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
 func (h *DeviceHandler) PairDevice(c *fiber.Ctx) error {
 	id := c.Params("device_id")
 
-	fmt.Printf("Pairing device with ID: %s\n", id)
-
-	var req dtos.PairDeviceRequest
+	var req PairDeviceRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -91,4 +87,28 @@ func (h *DeviceHandler) UnpairDevice(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "ยกเลิกการเชื่อมต่ออุปกรณ์เรียบร้อยแล้ว",
 	})
+}
+
+type UpdateDeviceRequest struct {
+	DeviceName string `json:"device_name"`
+}
+
+type PairDeviceRequest struct {
+	DeviceKey string `json:"device_key"`
+}
+
+type DeviceResponse struct {
+	DeviceID         string   `json:"device_id"`
+	DeviceLastHeartbeat time.Time   `json:"device_last_heartbeat"`
+	DeviceName string `json:"device_name"`
+	DeviceType string `json:"device_type"`
+}
+
+func ToDeviceResponse(d *domain.DeviceSummary) DeviceResponse {
+	return DeviceResponse{
+		DeviceID:         d.DeviceID,
+		DeviceLastHeartbeat: d.LastHeartbeat,
+		DeviceName: d.DeviceName,
+		DeviceType: d.DeviceType,
+	}
 }

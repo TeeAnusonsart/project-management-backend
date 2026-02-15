@@ -2,10 +2,23 @@ package gorm
 
 import (
 	"project-home-iot/internal/core/domain"
-	"project-home-iot/internal/infrastructure/mappers"
-	"project-home-iot/internal/infrastructure/gorm/models"
+	// "project-home-iot/internal/infrastructure/gorm/models"
 	"gorm.io/gorm"
+	"time"
 )
+
+type Device struct {
+	DeviceID string `gorm:"primaryKey;autoIncrement:false"`
+
+	DeviceName string
+	DeviceType string
+
+	RoomID *uint
+	Room   *Room `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	LastHeartbeat time.Time
+
+	Widgets []Widget `gorm:"foreignKey:DeviceID"`
+}
 
 type DeviceRepository struct {
 	db *gorm.DB
@@ -16,13 +29,13 @@ func NewDeviceRepository(db *gorm.DB) *DeviceRepository {
 }
 
 func (r *DeviceRepository) CreateDevice(device *domain.Device) error {
-	model := mappers.DomainToDeviceModel(device)
+	model := DomainToDeviceModel(device)
 
 	return r.db.Create(model).Error
 }
 
 func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error) {
-	var model models.Device
+	var model Device
 
 	err := r.db.
 		Joins("join widgets on widgets.device_id = devices.device_id").
@@ -33,19 +46,16 @@ func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error)
 		return nil, err
 	}
 
-	return mappers.ModelToDomainDevice(&model), nil
+	return ModelToDomainDevice(&model), nil
 }
 
-// func (r *DeviceRepository) CreateMonitorData(data *domain.MonitorData) error {
-// 	return r.db.Create(data).Error
-// }
 
 func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
 	var result []*domain.DeviceSummary
 
 	err := r.db.
 		Table("devices").
-		Select("device_id,last_heartbeat device_name, device_type").
+		Select("device_id,last_heartbeat, device_name, device_type").
 		Scan(&result).Error
 
 	if err != nil {
@@ -57,7 +67,7 @@ func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
 
 
 func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
-	var model models.Device
+	var model Device
 
 	if err := r.db.
 		Where("device_id = ?", id).
@@ -65,7 +75,7 @@ func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
 		return nil, err
 	}
 
-	return mappers.ModelToDomainDevice(&model), nil
+	return ModelToDomainDevice(&model), nil
 }
 
 func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, error) {
@@ -86,26 +96,43 @@ func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, err
 
 
 func (r *DeviceRepository) UpdateName(id string, name string) error {
-	return r.db.Model(&models.Device{}).
+	return r.db.Model(&Device{}).
 		Where("device_id = ?", id).
 		Update("device_name", name).Error
 }
 
 func (r *DeviceRepository) Pair(id string, deviceKey string) error {
-	return r.db.Model(&models.Device{}).
+	return r.db.Model(&Device{}).
 		Where("device_id = ?", id).
 		Update("device_key", deviceKey).Error
 }
 
 func (r *DeviceRepository) Unpair(id string) error {
-	return r.db.Model(&models.Device{}).
+	return r.db.Model(&Device{}).
 		Where("device_id = ?", id).
 		Update("device_key", "").Error
 }
 
 func (r *DeviceRepository) UpdateHeartbeat(deviceID string) error {
-	return r.db.Model(&models.Device{}).
+	return r.db.Model(&Device{}).
 		Where("device_id = ?", deviceID).
 		Update("last_heartbeat", gorm.Expr("NOW()")).Error
+}
+
+
+func DomainToDeviceModel(d *domain.Device) *Device {
+	return &Device{
+		DeviceID:   d.DeviceID,
+		DeviceName: d.DeviceName,
+		DeviceType: d.DeviceType,
+	}
+}
+
+func ModelToDomainDevice(m *Device) *domain.Device {
+	return &domain.Device{
+		DeviceID:         m.DeviceID,
+		DeviceName: m.DeviceName,
+		DeviceType: m.DeviceType,
+	}
 }
 

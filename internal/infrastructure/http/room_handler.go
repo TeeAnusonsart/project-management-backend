@@ -5,8 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/usecase"
-	"project-home-iot/internal/infrastructure/http/dtos"
-	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
+	"project-home-iot/internal/core/domain"
 )
 
 type RoomHandler struct {
@@ -23,9 +22,9 @@ func (h *RoomHandler) ListRooms(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	var response []dtos.RoomResponse
+	var response []RoomResponse
 	for _, r := range rooms {
-		response = append(response, httpmapper.ToRoomResponse(r))
+		response = append(response, ToRoomResponse(r))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
@@ -39,11 +38,11 @@ func (h *RoomHandler) GetRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(httpmapper.ToRoomResponse(room))
+	return c.JSON(ToRoomResponse(room))
 }
 
 func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
-	var req dtos.CreateRoomRequest
+	var req CreateRoomRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -60,7 +59,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 
 func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 	id, _ := strconv.ParseUint(c.Params("room_id"), 10, 64)
-	var req dtos.UpdateRoomRequest
+	var req UpdateRoomRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -90,7 +89,7 @@ func (h *RoomHandler) DeleteRoom(c *fiber.Ctx) error {
 func (h *RoomHandler) AddDevice(c *fiber.Ctx) error {
 	roomID, _ := strconv.ParseUint(c.Params("room_id"), 10, 64)
 
-	var req dtos.AddDeviceToRoomRequest
+	var req AddDeviceToRoomRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -113,10 +112,35 @@ func (h *RoomHandler) ListDevices(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	var response []dtos.DeviceResponse
+	var response []DeviceResponse
 	for _, d := range devices {
-		response = append(response, httpmapper.ToDeviceResponse(d))
+		response = append(response, ToDeviceResponse(d))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
+}
+
+func ToRoomResponse(r *domain.Room) RoomResponse {
+	return RoomResponse{
+		RoomID:   r.ID,
+		RoomName: r.Name,
+	}
+}
+
+
+type CreateRoomRequest struct {
+    RoomName string `json:"room_name"`
+}
+
+type UpdateRoomRequest struct {
+    RoomName string `json:"room_name"`
+}
+
+type AddDeviceToRoomRequest struct {
+    DeviceID uint `json:"device_id"`
+}
+
+type RoomResponse struct {
+    RoomID   uint   `json:"room_id"`
+    RoomName string `json:"room_name"`
 }

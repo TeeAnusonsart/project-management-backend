@@ -9,8 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
-	"project-home-iot/internal/infrastructure/http/dtos"
-	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
 )
 
 type UserHandler struct {
@@ -27,16 +25,16 @@ func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	var response []dtos.UserResponse
+	var response []UserResponse
 	for _, u := range users {
-		response = append(response, httpmapper.ToUserResponse(u))
+		response = append(response, ToUserResponse(u))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
 }
 
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	var req dtos.CreateUserRequest
+	var req CreateUserRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -70,7 +68,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(httpmapper.ToUserResponse(user))
+	return c.JSON(ToUserResponse(user))
 }
 
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
@@ -94,7 +92,7 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
 	}
 
-	var req dtos.ChangePasswordRequest
+	var req ChangePasswordRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -142,4 +140,37 @@ func (h *UserHandler) UploadProfile(c *fiber.Ctx) error {
 		"message":      "อัปโหลดรูปโปรไฟล์เรียบร้อยแล้ว",
 		"profile_path": savePath,
 	})
+}
+
+func ToUserResponse(u *domain.User) UserResponse {
+	return UserResponse{
+		UserID:      u.ID,
+		Username:    u.Username,
+		Name:        u.Name,
+		Email:       u.Email,
+		ProfilePath: u.ProfilePath,
+		Role:        string(u.Role),
+	}
+}
+
+type CreateUserRequest struct {
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	Password    string `json:"password"`
+	Email       string `json:"email"`
+	ProfilePath string `json:"profile_path"`
+}
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
+type UserResponse struct {
+	UserID      uint   `json:"user_id"`
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	ProfilePath string `json:"profile_path"`
+	Role        string `json:"role"`
 }

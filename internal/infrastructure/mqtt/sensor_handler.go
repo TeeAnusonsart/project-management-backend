@@ -6,7 +6,6 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"project-home-iot/internal/core/usecase"
-	dtos "project-home-iot/internal/infrastructure/mqtt/dtos"
 )
 
 type SensorHandler struct {
@@ -30,12 +29,7 @@ func (h *SensorHandler) HandleSensorMessage(
 
 	deviceID := parts[1]
 
-	// deviceID, err := strconv.ParseUint(deviceIDStr, 10, 64)
-	// if err != nil {
-	// 	return
-	// }
-
-	var payload dtos.SensorPayload
+	var payload SensorPayload
 	if err := json.Unmarshal(m.Payload(), &payload); err != nil {
 		return
 	}
@@ -53,4 +47,11 @@ func (h *SensorHandler) HandleSensorMessage(
 		"sensor",
 		payload.Value,
 	)
+}
+
+type SensorPayload struct {
+	// CapabilityID uint `json:"capability_id"`
+	CapabilityType string `json:"capability_type"`
+	ControlType string `json:"control_type"`
+	Value uint `json:"value"`
 }

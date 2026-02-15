@@ -3,13 +3,9 @@ package mqtt
 
 import (
 	"encoding/json"
-	"fmt"
 
-	// "project-home-iot/internal/core/domain"
+	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
-	"project-home-iot/internal/infrastructure/mappers"
-	dto "project-home-iot/internal/infrastructure/mqtt/dtos"
-
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -24,73 +20,43 @@ func NewMQTTHandler(uc usecase.DeviceUsecase,wuc usecase.WidgetUsecase) *MQTTHan
 
 func (h *MQTTHandler) SubscribeDeviceRegistration(client mqtt.Client) {
 	topic := "devices/register"
-	// fmt.Println("Subscribing to topic:", topic)
 
 	client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
-		// fmt.Println("Message received on topic:", m.Topic())
-		// fmt.Println("Payload:", string(m.Payload()))
-		var payload dto.DevicePayload
+
+		var payload DevicePayload
 
 		err := json.Unmarshal(m.Payload(), &payload)
 		if err != nil {
-			fmt.Printf("Error unmarshalling payload: %v\n", err)
 			return
 		}
 
-		device := mappers.PayloadToDomain(&payload)
+		device := PayloadToDomain(&payload)
 
 		
 		err = h.deviceUsecase.RegisterDevice(device)
 		if err != nil {
-			// fmt.Printf("Failed to save device %s: %v\n", payload.DeviceID, err)
 			return
 		}
 
-		// fmt.Printf("Successfully registered device: %s\n", payload.DeviceID)
 	})
 }
 
-// func (h *MQTTHandler) SubscribeReply(client mqtt.Client) {
-
-// 	client.Subscribe("devices/reply/+", 1, func(c mqtt.Client, m mqtt.Message) {
-
-// 		var resp dto.CommandResponse
-// 		json.Unmarshal(m.Payload(), &resp)
-
-// 		fmt.Printf("Received reply for correlation ID %s: Widget %d new value %d\n", resp.CorrelationID, resp.WidgetID, resp.Value)
-// 		h.widgetUsecase.UpdateValue(resp.WidgetID, resp.Value)
-// 	})
-// }
-
-// type MonitorPayload struct {
-// 	Value    uint `json:"value"`
-// 	WidgetID uint `json:"widget_id"`
-// }
-
-// func (h *MQTTHandler) SubscribeSensorData(client mqtt.Client) {
-// 	topic := "devices/data"
-// 	client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
-// 		var payload MonitorPayload
-
-// 		if err := json.Unmarshal(m.Payload(), &payload); err != nil {
-// 			fmt.Printf("Error sensor payload: %v\n", err)
-// 			return
-// 		}
-
-// 		sensorData := &domain.MonitorData{
-// 			Value:    payload.Value,
-// 			WidgetID: payload.WidgetID,
-// 		}
-
-// 		if err := h.usecase.RecordSensorData(sensorData); err != nil {
-// 			fmt.Printf("Failed to save sensor data: %v\n", err)
-// 			return
-// 		}
-
-// 		fmt.Printf("Sensor Recorded: Widget %d = %d\n", payload.WidgetID, payload.Value)
-// 	})
-// }
 
 func (h *MQTTHandler) DeviceCommand(client mqtt.Client) {
 
+}
+
+type DevicePayload struct {
+	DeviceID   string   `json:"device_id"`
+	DeviceName string `json:"device_name"`
+	DeviceType string `json:"device_type"`
+	Topic      string `json:"topic"`
+}
+
+func PayloadToDomain(p *DevicePayload) *domain.Device {
+	return &domain.Device{
+		DeviceID:         p.DeviceID,
+		DeviceName: p.DeviceName,
+		DeviceType: p.DeviceType,
+	}
 }

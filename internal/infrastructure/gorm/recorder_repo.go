@@ -6,8 +6,17 @@ import (
 	"gorm.io/gorm"
 
 	// "project-home-iot/internal/infrastructure/gorm/models"
-	"project-home-iot/internal/infrastructure/mappers"
+	// "project-home-iot/internal/infrastructure/mappers"
 )
+
+type Log struct {
+	gorm.Model
+	Value     uint
+	EventType string
+
+	WidgetID  uint       `gorm:"not null"`
+	Widget    Widget `gorm:"foreignKey:WidgetID;references:ID"`
+}
 
 type RecorderRepository struct {
 	db *gorm.DB
@@ -39,11 +48,28 @@ func (r *RecorderRepository) RecordLog(log *domain.Log) error {
 	// }
 
 	// return r.DataReceive(log)
-	model := mappers.LogDomainToModel(log)
+	model := LogDomainToModel(log)
     if err := r.db.Create(model).Error; err != nil {
         return err
     }
 
     log.ID = model.ID
     return nil
+}
+
+func LogDomainToModel(d *domain.Log) *Log {
+	return &Log{
+		WidgetID:  d.WidgetID,
+		Value:     d.Value,
+		EventType: d.EventType,
+	}
+}
+
+func LogModelToDomain(m *Log) *domain.Log {
+	return &domain.Log{
+		ID:        m.ID,
+		WidgetID:  m.WidgetID,
+		Value:     m.Value,
+		EventType: m.EventType,
+	}
 }

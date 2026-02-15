@@ -5,9 +5,7 @@ import (
 
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
-	"project-home-iot/internal/infrastructure/http/dtos"
-	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
-
+	"time"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -35,9 +33,9 @@ func (h *WidgetHandler) ListWidgets(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	var response []dtos.WidgetResponse
+	var response []WidgetResponse
 	for _, w := range widgets {
-		response = append(response, httpmapper.ToWidgetResponse(w))
+		response = append(response, ToWidgetResponse(w))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
@@ -54,7 +52,7 @@ func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(httpmapper.ToWidgetResponse(w))
+	return c.JSON(ToWidgetResponse(w))
 }
 
 
@@ -173,9 +171,9 @@ func (h *WidgetHandler) ListByRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	var response []dtos.WidgetResponse
+	var response []WidgetResponse
 	for _, w := range widgets {
-		response = append(response, httpmapper.ToWidgetResponse(w))
+		response = append(response, ToWidgetResponse(w))
 	}
 
 	return c.JSON(fiber.Map{"data": response})
@@ -193,4 +191,54 @@ func (h *WidgetHandler) DeleteWidget(c *fiber.Ctx) error {
 	})
 }
 
+func ToWidgetResponse(w *domain.Widget) WidgetResponse {
 
+	response := WidgetResponse{
+		WidgetID:     w.ID,
+		WidgetOrder:  w.WidgetOrder,
+		WidgetStatus: w.WidgetStatus,
+		Value:        w.Value,
+	}
+
+	if w.Device != nil {
+		response.Device = DeviceDTO{
+			DeviceID:   w.Device.DeviceID,
+			DeviceLastHeartbeat: w.Device.LastHeartbeat,
+			DeviceName: w.Device.DeviceName,
+			DeviceType: w.Device.DeviceType,
+		}
+	}
+
+	if w.Capability != nil {
+		response.Capability = CapabilityDTO{
+			CapabilityID:   w.Capability.ID,
+			CapabilityType: w.Capability.CapabilityType,
+			ControlType:    w.Capability.ControlType,
+		}
+	}
+
+	return response
+}
+
+type WidgetResponse struct {
+	WidgetID     uint   `json:"widget_id"`
+	WidgetOrder  uint   `json:"widget_order"`
+	WidgetStatus string `json:"widget_status"`
+	Value        uint   `json:"value"`
+
+	Device     DeviceDTO     `json:"device"`
+	Capability CapabilityDTO `json:"capability"`
+}
+
+type DeviceDTO struct {
+	DeviceID   string   `json:"device_id"`
+	DeviceName string `json:"device_name"`
+	DeviceLastHeartbeat time.Time `json:"device_last_heartbeat"`
+	DeviceType string `json:"device_type"`
+}
+
+type CapabilityDTO struct {
+	CapabilityID   uint   `json:"capability_id"`
+	CapabilityType string `json:"capability_type"`
+	ControlType    string `json:"control_type"`
+}

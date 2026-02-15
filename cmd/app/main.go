@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"project-home-iot/internal/database"
-	"project-home-iot/internal/infrastructure/gorm/models"
+	"project-home-iot/internal/infrastructure/gorm"
 
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofiber/fiber/v2"
@@ -23,12 +23,12 @@ func main() {
 
 	fmt.Println("Starting fresh migration...")
 	db.AutoMigrate(
-		&models.User{},
-		&models.Room{},
-		&models.Capability{},
-		&models.Device{}, // สร้างแม่ก่อน
-		&models.Widget{}, // สร้างลูกทีหลัง
-		&models.Log{},
+		&gorm.User{},
+		&gorm.Room{},
+		&gorm.Capability{},
+		&gorm.Device{}, 
+		&gorm.Widget{}, 
+		&gorm.Log{},
 	)
 
 	// db.AutoMigrate(&models.Widget{})

@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"project-home-iot/internal/core/domain"
-	"project-home-iot/internal/infrastructure/mappers"
-	dto "project-home-iot/internal/infrastructure/mqtt/dtos"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -25,14 +23,11 @@ func (m *MQTTDeviceCommander) RequestCommand(deviceId string, cmd *domain.Device
 
 	ch := make(chan domain.CommandResponse, 1)
 
-	// 1. Subscribe รอคำตอบ
 	tokenSub := m.client.Subscribe(replyTopic, 1, func(c mqtt.Client, msg mqtt.Message) {
-		var respDTO dto.CommandResponse
+		var respDTO CommandResponse
 		if err := json.Unmarshal(msg.Payload(), &respDTO); err == nil {
-			// Map DTO กลับเป็น Domain Model
 			ch <- domain.CommandResponse{
 				Status: respDTO.Status,
-				// Status, Message เพิ่มเติมตามต้องการ
 			}
 		}
 		c.Unsubscribe(replyTopic)
@@ -42,9 +37,7 @@ func (m *MQTTDeviceCommander) RequestCommand(deviceId string, cmd *domain.Device
 		return nil, tokenSub.Error()
 	}
 
-	// 2. Publish คำสั่งออกไป
-
-	payloadDTO := mappers.DeviceCommandDomainToPayload(cmd)
+	payloadDTO := DeviceCommandDomainToPayload(cmd)
 	payload, err := json.Marshal(payloadDTO)
 	if err != nil {
 		fmt.Printf("Error marshalling command payload: %v\n", err)
@@ -58,12 +51,10 @@ func (m *MQTTDeviceCommander) RequestCommand(deviceId string, cmd *domain.Device
 	}
 
 	if err := tokenPub.Error(); err != nil {
-		fmt.Println("❌ Publish error:", err)
 		return nil, err
 	}
 
 
-	// 3. รอผลลัพธ์ด้วย Timeout
 	select {
 	case res := <-ch:
 		return &res, nil
@@ -72,3 +63,24 @@ func (m *MQTTDeviceCommander) RequestCommand(deviceId string, cmd *domain.Device
 		return nil, fmt.Errorf("device timeout on topic %s", replyTopic)
 	}
 }
+
+func DeviceCommandDomainToPayload(d *domain.DeviceCommand) *DeviceCommand {
+	return &DeviceCommand{
+		CapabilityType: d.CapabilityType,
+		ControlType: d.ControlType,
+		Value:        d.Value,
+		ReplyTopic:   d.ReplyTopic,
+	}
+}
+
+type DeviceCommand struct {
+	CapabilityType string `json:"capability_type"`
+	ControlType    string `json:"control_type"`
+	Value          uint   `json:"value"`
+	ReplyTopic     string `json:"reply_topic"`
+}
+
+type CommandResponse struct {
+	Status string `json:"status"`
+}
+
