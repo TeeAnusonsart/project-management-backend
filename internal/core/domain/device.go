@@ -1,19 +1,23 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Device struct {
-	ID uint
+	DeviceID string
 
 	DeviceName string
 	DeviceType string
-	Topic      string
-
+	// Topic      string
+	LastHeartbeat time.Time
 	Widgets []Widget
 }
 
 type DeviceSummary struct {
-	ID   uint
+	DeviceID   string
+	LastHeartbeat time.Time
 	DeviceName string
 	DeviceType string
 }
@@ -30,7 +34,7 @@ type CommandResponse struct {
 }
 
 func (d *Device) Validate() error {
-	if d.ID == 0 {
+	if d.DeviceID == "" {
 		return fmt.Errorf("device id is required")
 	}
 	if d.DeviceName == "" {
@@ -39,9 +43,9 @@ func (d *Device) Validate() error {
 	if d.DeviceType == "" {
 		return fmt.Errorf("device type is required")
 	}
-	if d.Topic == "" {
-		return fmt.Errorf("topic is required")
-	}
+	// if d.Topic == "" {
+	// 	return fmt.Errorf("topic is required")
+	// }
 	return nil
 }
 
@@ -53,21 +57,21 @@ type DeviceRepository interface {
 	FindByWidgetID(widgetID uint) (*Device, error)
 
 	GetAllSummaries() ([]*DeviceSummary, error)
-	GetSummaryByID(id uint) (*DeviceSummary, error)
+	GetSummaryByID(deviceID string) (*DeviceSummary, error)
 
-	GetByID(id uint) (*Device, error)
-
-	UpdateName(id uint, name string) error
-	Pair(id uint, deviceKey string) error
-	Unpair(id uint) error
+	GetByID(deviceID string) (*Device, error)
+	UpdateHeartbeat(deviceID string) error
+	UpdateName(deviceID string, name string) error
+	Pair(deviceID string, deviceKey string) error
+	Unpair(deviceID string) error
 }
 
 type PairCommander interface {
-	RequestPair(deviceID uint, deviceKey string) error
-	Subscribe(topic string) error
+	RequestPair(deviceID string, deviceKey string) error
+	Subscribe(deviceID string) error
 }
 
 type DeviceCommander interface {
-	RequestCommand(deviceId uint, cmd *DeviceCommand,correlationID string) (*CommandResponse, error)
+	RequestCommand(deviceId string, cmd *DeviceCommand,correlationID string) (*CommandResponse, error)
 }
 

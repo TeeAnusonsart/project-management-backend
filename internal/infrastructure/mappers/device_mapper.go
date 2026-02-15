@@ -8,20 +8,20 @@ import (
 
 func DomainToDeviceModel(d *domain.Device) *models.Device {
 	return &models.Device{
-		ID:   d.ID,
+		DeviceID:   d.DeviceID,
 		DeviceName: d.DeviceName,
 		DeviceType: d.DeviceType,
-		Topic:      d.Topic,
+		// Topic:      d.Topic,
 	}
 }
 
 func ModelToDomainDevice(m *models.Device) *domain.Device {
 	return &domain.Device{
-		ID:         m.ID,
+		DeviceID:         m.DeviceID,
 		// DeviceID:   m.DeviceID,
 		DeviceName: m.DeviceName,
 		DeviceType: m.DeviceType,
-		Topic:      m.Topic,
+		// Topic:      m.Topic,
 	}
 }
 
@@ -30,16 +30,16 @@ func DomainToDevicePayload(d *domain.Device) *dtos.DevicePayload {
 		// DeviceID:   d.DeviceID,
 		DeviceName: d.DeviceName,
 		DeviceType: d.DeviceType,
-		Topic:      d.Topic,
+		// Topic:      d.Topic,
 	}
 }
 
 func PayloadToDomain(p *dtos.DevicePayload) *domain.Device {
 	return &domain.Device{
-		ID:         p.DeviceID,
+		DeviceID:         p.DeviceID,
 		DeviceName: p.DeviceName,
 		DeviceType: p.DeviceType,
-		Topic:      p.Topic,
+		// Topic:      p.Topic,
 	}
 }
 

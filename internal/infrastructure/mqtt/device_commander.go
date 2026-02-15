@@ -20,8 +20,8 @@ func NewMQTTDeviceCommander(client mqtt.Client) domain.DeviceCommander {
 	return &MQTTDeviceCommander{client: client}
 }
 
-func (m *MQTTDeviceCommander) RequestCommand(deviceId uint, cmd *domain.DeviceCommand, correlationID string) (*domain.CommandResponse, error) {
-	replyTopic := fmt.Sprintf("devices/%s/response", correlationID)
+func (m *MQTTDeviceCommander) RequestCommand(deviceId string, cmd *domain.DeviceCommand, correlationID string) (*domain.CommandResponse, error) {
+	replyTopic := fmt.Sprintf("devices/%s/command/response", correlationID)
 
 	ch := make(chan domain.CommandResponse, 1)
 
@@ -45,18 +45,12 @@ func (m *MQTTDeviceCommander) RequestCommand(deviceId uint, cmd *domain.DeviceCo
 	// 2. Publish คำสั่งออกไป
 
 	payloadDTO := mappers.DeviceCommandDomainToPayload(cmd)
-
-	fmt.Printf("📤 XXXPayload: %s\n", payloadDTO.ReplyTopic)
-	fmt.Println("Is connected:", m.client.IsConnected())
-	// fmt.Printf("📡 Sending cXXXXommand to device ID %d with correlation ID %s\n", deviceId, correlationID)
-
 	payload, err := json.Marshal(payloadDTO)
 	if err != nil {
 		fmt.Printf("Error marshalling command payload: %v\n", err)
 		return nil, err
 	}
-	topic := fmt.Sprintf("devices/%d/commands", deviceId)
-	fmt.Printf("📡 Sending command to topic: %s\n", topic)
+	topic := fmt.Sprintf("devices/%s/commands", deviceId)
 	tokenPub := m.client.Publish(topic, 1, false, payload)
 	if tokenPub.Wait() && tokenPub.Error() != nil {
 		m.client.Unsubscribe(replyTopic)
@@ -68,7 +62,6 @@ func (m *MQTTDeviceCommander) RequestCommand(deviceId uint, cmd *domain.DeviceCo
 		return nil, err
 	}
 
-    fmt.Printf("📤 Command published to topic: %s\n", topic)
 
 	// 3. รอผลลัพธ์ด้วย Timeout
 	select {

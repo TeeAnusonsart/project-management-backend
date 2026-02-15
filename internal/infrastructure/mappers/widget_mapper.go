@@ -28,12 +28,13 @@ func WidgetModelToDomain(m *models.Widget) *domain.Widget {
 		WidgetOrder:   m.WidgetOrder,
 	}
 
-	if m.Device.ID != 0 {
+	if m.Device.DeviceID != "" {
 		widget.Device = &domain.Device{
-			ID:         m.Device.ID,
+			DeviceID:         m.Device.DeviceID,
+			LastHeartbeat: m.Device.LastHeartbeat,
 			DeviceName: m.Device.DeviceName,
 			DeviceType: m.Device.DeviceType,
-			Topic:      m.Device.Topic,
+
 		}
 	}
 

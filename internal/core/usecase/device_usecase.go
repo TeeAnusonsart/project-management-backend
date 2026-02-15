@@ -1,17 +1,18 @@
 package usecase
 
 import (
-
+	"fmt"
 	"project-home-iot/internal/core/domain"
 )
 
 type DeviceUsecase interface {
 	RegisterDevice(device *domain.Device) error
 	ListDevices() ([]*domain.DeviceSummary, error)
-	GetDevice(id uint) (*domain.DeviceSummary, error)
-	UpdateDevice(id uint, name string) error
-	PairDevice(id uint, deviceKey string) error
-	UnpairDevice(id uint) error
+	GetDevice(id string) (*domain.DeviceSummary, error)
+	UpdateHeartbeat(id string) error
+	UpdateDevice(id string, name string) error
+	PairDevice(id string, deviceKey string) error
+	UnpairDevice(id string) error
 }
 
 type deviceUsecase struct {
@@ -59,21 +60,21 @@ func (u *deviceUsecase) ListDevices() ([]*domain.DeviceSummary, error) {
 	return u.repo.GetAllSummaries()
 }
 
-func (u *deviceUsecase) GetDevice(id uint) (*domain.DeviceSummary, error) {
+func (u *deviceUsecase) GetDevice(id string) (*domain.DeviceSummary, error) {
 	return u.repo.GetSummaryByID(id)
 }
 
-func (u *deviceUsecase) UpdateDevice(id uint, name string) error {
+func (u *deviceUsecase) UpdateDevice(id string, name string) error {
 	return u.repo.UpdateName(id, name)
 }
 
-func (u *deviceUsecase) PairDevice(id uint, deviceKey string) error {
+func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
 	device, err := u.repo.GetByID(id)
 	if err != nil {
 		return err
 	}
 
-	if err := u.pairCommander.RequestPair(device.ID, deviceKey); err != nil {
+	if err := u.pairCommander.RequestPair(device.DeviceID, deviceKey); err != nil {
 		return err
 	}
 
@@ -84,19 +85,25 @@ func (u *deviceUsecase) PairDevice(id uint, deviceKey string) error {
 			return err
 		}
 		widget := &domain.Widget{
-			DeviceID:      device.ID,
+			DeviceID:      device.DeviceID,
 			CapabilityID:  cap.ID,
 			WidgetStatus: "inactive",
 		}
+
+		fmt.Printf("Creating widget for device %s with capability %d\n", device.DeviceID, cap.ID)
 
 		if err := u.widgetRepo.CreateWidget(widget); err != nil {
 			return err
 		}
 	}
 
-	return u.pairCommander.Subscribe(device.Topic)
+	return u.pairCommander.Subscribe(device.DeviceID)
 }
 
-func (u *deviceUsecase) UnpairDevice(id uint) error {
+func (u *deviceUsecase) UnpairDevice(id string) error {
 	return u.repo.Unpair(id)
+}
+
+func (u *deviceUsecase) UpdateHeartbeat(id string) error {
+	return u.repo.UpdateHeartbeat(id)
 }

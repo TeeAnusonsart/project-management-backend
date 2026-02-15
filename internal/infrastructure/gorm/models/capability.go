@@ -8,5 +8,6 @@ import (
 type Capability struct {
 	gorm.Model
 	CapabilityType string
+	ComtrolType	string
 	Widgets        []Widget `gorm:"foreignKey:CapabilityID"`
 }

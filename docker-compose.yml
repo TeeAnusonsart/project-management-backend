@@ -52,6 +52,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
       - postgres
+      - mqtt-broker
     ports:
       - "3000:3000"
     restart: unless-stopped

@@ -6,7 +6,6 @@ import (
 
 type Log struct {
 	gorm.Model
-	ActorType string
 	Value     uint
 	EventType string
 

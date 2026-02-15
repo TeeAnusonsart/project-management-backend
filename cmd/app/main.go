@@ -8,30 +8,34 @@ import (
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-
 	// "project-home-iot/internal/core/usecase"
 	// "project-home-iot/internal/infrastructure/gorm"
 	// "project-home-iot/internal/infrastructure/mqtt"
 )
 
 func main() {
-	
+
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("Warning: No .env file found")
 	}
 
-	
 	db := database.ConnectDB()
+
+	fmt.Println("Starting fresh migration...")
 	db.AutoMigrate(
 		&models.User{},
 		&models.Room{},
-		&models.Device{},
 		&models.Capability{},
-		&models.Widget{},
+		&models.Device{}, // สร้างแม่ก่อน
+		&models.Widget{}, // สร้างลูกทีหลัง
 		&models.Log{},
 	)
 
-	opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883")
+	// db.AutoMigrate(&models.Widget{})
+
+	// opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
+	
+	opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
 
 	client := mqttlib.NewClient(opts)
 
@@ -51,7 +55,7 @@ func main() {
 	// _ = sub.SubscribeSensor(handler.HandleSensorMessage)
 
 	handlers.MQTT.SubscribeDeviceRegistration(client)
-	client.Publish("xxx/y",0,false, "Hello MQTT")
+	client.Publish("xxx/y", 0, false, "Hello MQTT")
 	_ = handlers.SensorSubscriber.SubscribeSensor(handlers.SensorHandler.HandleSensorMessage)
 	app := fiber.New()
 

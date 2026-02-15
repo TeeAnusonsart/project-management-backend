@@ -15,7 +15,7 @@ func NewWidgetRepository(db *gorm.DB) *WidgetRepository {
 	return &WidgetRepository{db: db}
 }
 
-func (r*WidgetRepository) GetWidgetIdByDeviceAndCapability(deviceId uint, capabilityId uint) *domain.Widget {
+func (r*WidgetRepository) GetWidgetIdByDeviceAndCapability(deviceId string, capabilityId uint) *domain.Widget {
 	var widgetModel models.Widget
 	r.db.Where("device_id = ? AND capability_id = ?", deviceId, capabilityId).
 		First(&widgetModel)
@@ -29,7 +29,7 @@ func (r *WidgetRepository) CreateWidget(widget *domain.Widget) error {
 }
 
 func (r *WidgetRepository) UpdateValue(widgetID uint, value uint) error {
-	return r.db.Model(&domain.Widget{}).
+	return r.db.Model(&models.Widget{}).
 		Where("id = ?", widgetID).
 		Update("value", value).Error
 }

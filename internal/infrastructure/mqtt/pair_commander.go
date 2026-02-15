@@ -17,10 +17,10 @@ func NewMQTTPairCommander(client mqtt.Client) domain.PairCommander {
 	return &MQTTPairCommander{client: client}
 }
 
-func (m *MQTTPairCommander) RequestPair(deviceID uint, deviceKey string) error {
-	requestTopic := fmt.Sprintf("devices/%d/pair/request", deviceID)
-	replyTopic := fmt.Sprintf("devices/%d/pair/response", deviceID)
-
+func (m *MQTTPairCommander) RequestPair(deviceID string, deviceKey string) error {
+	requestTopic := fmt.Sprintf("devices/%s/pair/request", deviceID)
+	replyTopic := fmt.Sprintf("devices/%s/pair/response", deviceID)
+	
 	ch := make(chan string, 1)
 
 	tokenSub := m.client.Subscribe(replyTopic, 1, func(c mqtt.Client, msg mqtt.Message) {
@@ -64,7 +64,8 @@ func (m *MQTTPairCommander) RequestPair(deviceID uint, deviceKey string) error {
 	}
 }
 
-func (m *MQTTPairCommander) Subscribe(topic string) error {
+func (m *MQTTPairCommander) Subscribe(deviceID string) error {
+	topic := fmt.Sprintf("devices/%s/pair/response", deviceID)
 	token := m.client.Subscribe(topic, 1, nil)
 	token.Wait()
 	return token.Error()

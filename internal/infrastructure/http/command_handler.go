@@ -43,7 +43,7 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 		CapabilityType: widget.Capability.CapabilityType,
 		ControlType:    widget.Capability.ControlType,
 		Value:          req.Value,
-		ReplyTopic:     "devices/reply/" + correlationID,
+		ReplyTopic:     "devices/"+correlationID+"/command/response",
 	}
 
 	if err := h.commandUsecase.SendCommand(cmd, uint(widgetID), correlationID); err != nil {

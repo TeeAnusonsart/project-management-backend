@@ -7,7 +7,8 @@ import (
 
 func ToDeviceResponse(d *domain.DeviceSummary) dtos.DeviceResponse {
 	return dtos.DeviceResponse{
-		ID:         d.ID,
+		DeviceID:         d.DeviceID,
+		DeviceLastHeartbeat: d.LastHeartbeat,
 		DeviceName: d.DeviceName,
 		DeviceType: d.DeviceType,
 	}

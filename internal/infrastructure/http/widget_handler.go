@@ -1,13 +1,15 @@
 package http
 
 import (
+
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
 	"project-home-iot/internal/infrastructure/http/dtos"
 	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type WidgetHandler struct {
@@ -48,7 +50,7 @@ func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 
 func (h *WidgetHandler) CreateWidget(c *fiber.Ctx) error {
 	var req struct {
-		DeviceID     uint   `json:"device_id"`
+		DeviceID     string   `json:"device_id"`
 		CapabilityID uint   `json:"capability_id"`
 		WidgetStatus string `json:"widget_status"`
 	}
@@ -82,7 +84,7 @@ func (h *WidgetHandler) UpdateWidget(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		DeviceID     uint   `json:"device_id"`
+		DeviceID     string   `json:"device_id"`
 		CapabilityID uint   `json:"capability_id"`
 		WidgetStatus string `json:"widget_status"`
 	}

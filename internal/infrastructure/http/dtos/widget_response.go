@@ -1,5 +1,8 @@
 package dtos
 
+import "time"
+
+
 type WidgetResponse struct {
 	WidgetID     uint   `json:"widget_id"`
 	WidgetOrder  uint   `json:"widget_order"`
@@ -11,8 +14,9 @@ type WidgetResponse struct {
 }
 
 type DeviceDTO struct {
-	DeviceID   uint   `json:"device_id"`
+	DeviceID   string   `json:"device_id"`
 	DeviceName string `json:"device_name"`
+	DeviceLastHeartbeat time.Time `json:"device_last_heartbeat"`
 	DeviceType string `json:"device_type"`
 }
 

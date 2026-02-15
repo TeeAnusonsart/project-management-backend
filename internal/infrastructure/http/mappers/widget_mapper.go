@@ -16,7 +16,8 @@ func ToWidgetResponse(w *domain.Widget) dtos.WidgetResponse {
 
 	if w.Device != nil {
 		response.Device = dtos.DeviceDTO{
-			DeviceID:   w.Device.ID,
+			DeviceID:   w.Device.DeviceID,
+			DeviceLastHeartbeat: w.Device.LastHeartbeat,
 			DeviceName: w.Device.DeviceName,
 			DeviceType: w.Device.DeviceType,
 		}

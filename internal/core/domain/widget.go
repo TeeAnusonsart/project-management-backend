@@ -7,7 +7,7 @@ type Widget struct {
 	WidgetStatus string
 	Value        uint
 
-	DeviceID     uint
+	DeviceID     string
 	CapabilityID uint
 
 	Device     *Device
@@ -23,7 +23,7 @@ type Log struct {
 }
 
 type WidgetRepository interface {
-	GetWidgetIdByDeviceAndCapability(deviceId uint, capabilityId uint) *Widget
+	GetWidgetIdByDeviceAndCapability(deviceId string, capabilityId uint) *Widget
 	CreateWidget(widget *Widget) error
 	Update(widget *Widget) error
 	Delete(id uint) error
@@ -40,5 +40,6 @@ type WidgetRepository interface {
 
 type Recorder interface {
 	// DataReceive(log *Log) error
-	RecordLog(widgetId uint,eventType string,value uint) error
+	// RecordLog(widgetId uint,eventType string,value uint) error
+	RecordLog(log *Log) error
 }

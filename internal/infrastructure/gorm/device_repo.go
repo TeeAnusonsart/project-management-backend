@@ -25,7 +25,7 @@ func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error)
 	var model models.Device
 
 	err := r.db.
-		Joins("join widgets on widgets.device_id = devices.id").
+		Joins("join widgets on widgets.device_id = devices.device_id").
 		Where("widgets.id = ?", widgetID).
 		First(&model).Error
 
@@ -45,7 +45,7 @@ func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
 
 	err := r.db.
 		Table("devices").
-		Select("id, device_name, device_type").
+		Select("device_id,last_heartbeat device_name, device_type").
 		Scan(&result).Error
 
 	if err != nil {
@@ -56,21 +56,25 @@ func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
 }
 
 
-func (r *DeviceRepository) GetByID(id uint) (*domain.Device, error) {
+func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
 	var model models.Device
-	if err := r.db.First(&model, id).Error; err != nil {
+
+	if err := r.db.
+		Where("device_id = ?", id).
+		First(&model).Error; err != nil {
 		return nil, err
 	}
+
 	return mappers.ModelToDomainDevice(&model), nil
 }
 
-func (r *DeviceRepository) GetSummaryByID(id uint) (*domain.DeviceSummary, error) {
+func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, error) {
 	var result domain.DeviceSummary
 
 	err := r.db.
 		Table("devices").
-		Select("id, device_name, device_type").
-		Where("id = ?", id).
+		Select("device_id, last_heartbeat, device_name, device_type").
+		Where("device_id = ?", id).
 		First(&result).Error
 
 	if err != nil {
@@ -81,21 +85,27 @@ func (r *DeviceRepository) GetSummaryByID(id uint) (*domain.DeviceSummary, error
 }
 
 
-func (r *DeviceRepository) UpdateName(id uint, name string) error {
+func (r *DeviceRepository) UpdateName(id string, name string) error {
 	return r.db.Model(&models.Device{}).
-		Where("id = ?", id).
+		Where("device_id = ?", id).
 		Update("device_name", name).Error
 }
 
-func (r *DeviceRepository) Pair(id uint, deviceKey string) error {
+func (r *DeviceRepository) Pair(id string, deviceKey string) error {
 	return r.db.Model(&models.Device{}).
-		Where("id = ?", id).
+		Where("device_id = ?", id).
 		Update("device_key", deviceKey).Error
 }
 
-func (r *DeviceRepository) Unpair(id uint) error {
+func (r *DeviceRepository) Unpair(id string) error {
 	return r.db.Model(&models.Device{}).
-		Where("id = ?", id).
+		Where("device_id = ?", id).
 		Update("device_key", "").Error
+}
+
+func (r *DeviceRepository) UpdateHeartbeat(deviceID string) error {
+	return r.db.Model(&models.Device{}).
+		Where("device_id = ?", deviceID).
+		Update("last_heartbeat", gorm.Expr("NOW()")).Error
 }
 

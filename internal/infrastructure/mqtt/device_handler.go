@@ -24,11 +24,11 @@ func NewMQTTHandler(uc usecase.DeviceUsecase,wuc usecase.WidgetUsecase) *MQTTHan
 
 func (h *MQTTHandler) SubscribeDeviceRegistration(client mqtt.Client) {
 	topic := "devices/register"
-	fmt.Println("Subscribing to topic:", topic)
+	// fmt.Println("Subscribing to topic:", topic)
 
 	client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
-		fmt.Println("Message received on topic:", m.Topic())
-		fmt.Println("Payload:", string(m.Payload()))
+		// fmt.Println("Message received on topic:", m.Topic())
+		// fmt.Println("Payload:", string(m.Payload()))
 		var payload dto.DevicePayload
 
 		err := json.Unmarshal(m.Payload(), &payload)
@@ -42,11 +42,11 @@ func (h *MQTTHandler) SubscribeDeviceRegistration(client mqtt.Client) {
 		
 		err = h.deviceUsecase.RegisterDevice(device)
 		if err != nil {
-			fmt.Printf("Failed to save device %s: %v\n", payload.DeviceID, err)
+			// fmt.Printf("Failed to save device %s: %v\n", payload.DeviceID, err)
 			return
 		}
 
-		fmt.Printf("Successfully registered device: %s\n", payload.DeviceID)
+		// fmt.Printf("Successfully registered device: %s\n", payload.DeviceID)
 	})
 }
 

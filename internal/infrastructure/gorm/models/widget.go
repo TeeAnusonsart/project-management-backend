@@ -14,6 +14,6 @@ type Widget struct {
 	CapabilityID  uint       `gorm:"not null"`
 	Capability    Capability `gorm:"foreignKey:CapabilityID;references:ID"`
 	
-	DeviceID     uint       `gorm:"not null"`
-    Device       Device     `gorm:"foreignKey:DeviceID;references:ID"`
+	DeviceID     string       `gorm:"not null"`
+    Device       Device     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }

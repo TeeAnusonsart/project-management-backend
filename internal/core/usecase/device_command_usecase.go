@@ -1,49 +1,53 @@
 package usecase
 
 import (
-	"fmt"
 	"project-home-iot/internal/core/domain"
 )
 
 type CommandUsecase interface {
-	SendCommand(cmd *domain.DeviceCommand,widgetID uint,correlationID string) error
+	SendCommand(cmd *domain.DeviceCommand, widgetID uint, correlationID string) error
 }
 
 type commandUsecase struct {
-    deviceRepo       domain.DeviceRepository
-    widgetRepository domain.WidgetRepository
-    commander        domain.DeviceCommander
-    recorder      domain.Recorder
+	deviceRepo       domain.DeviceRepository
+	widgetRepository domain.WidgetRepository
+	commander        domain.DeviceCommander
+	recorder         domain.Recorder
 }
 
-func NewCommandUsecase(dr domain.DeviceRepository, wr domain.WidgetRepository, dc domain.DeviceCommander,rd domain.Recorder) CommandUsecase {
-    return &commandUsecase{
-        deviceRepo:       dr,
-        widgetRepository: wr,
-        commander:        dc,
-        recorder:      rd,
-    }
+func NewCommandUsecase(dr domain.DeviceRepository, wr domain.WidgetRepository, dc domain.DeviceCommander, rd domain.Recorder) CommandUsecase {
+	return &commandUsecase{
+		deviceRepo:       dr,
+		widgetRepository: wr,
+		commander:        dc,
+		recorder:         rd,
+	}
 }
 
-func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,correlationID string) error {
-    device, err := u.deviceRepo.FindByWidgetID(widgetID)
-    if err != nil {
-        return err
-    }
+func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand, widgetID uint, correlationID string) error {
+	device, err := u.deviceRepo.FindByWidgetID(widgetID)
+	if err != nil {
+		return err
+	}
 
-    fmt.Printf("🔄 Sending command to device ID %d for widget ID %d\n", device.ID, widgetID)
-    resp, err := u.commander.RequestCommand(device.ID, cmd,correlationID)
-    if err != nil {
-        return err
-    }
+	resp, err := u.commander.RequestCommand(device.DeviceID, cmd, correlationID)
+	if err != nil {
+		return err
+	}
 
-    if resp.Status != "success" {
-        return err
-    }
-    u.recorder.RecordLog(widgetID, "command", cmd.Value)
+	if resp.Status != "success" {
+		return err
+	}
+	err = u.recorder.RecordLog(&domain.Log{
+		WidgetID:  widgetID,
+		EventType: "command",
+		Value:     cmd.Value,
+	})
+	if err != nil {
+		return err
+	}
 
-
-    return u.widgetRepository.UpdateValue(widgetID, cmd.Value)
+	return u.widgetRepository.UpdateValue(widgetID, cmd.Value)
 }
 
 // func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand) error {
@@ -55,7 +59,7 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,cor
 //     // 1. สร้าง Topic เฉพาะสำหรับรอรับ Reply ของ Request นี้เท่านั้น
 //     // สมมติว่า cmd.CorrelationID มีค่า เช่น "req-123"
 //     replyTopic := fmt.Sprintf("devices/reply/%s", cmd.CorrelationID)
-    
+
 // 	fmt.Printf("🔄 Sending command to device on topic: %s\n", device.Topic)
 //     // 2. เตรียม Channel มารอรับข้อมูล (กำหนดขนาด 1 เพื่อไม่ให้บล็อกตอนส่งเข้า)
 //     ch := make(chan dto.CommandResponse, 1)
@@ -69,7 +73,7 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,cor
 
 //         fmt.Printf("📥 Received matching reply on %s\n", replyTopic)
 //         ch <- resp
-        
+
 //         c.Unsubscribe(replyTopic)
 //     })
 
@@ -126,8 +130,6 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,cor
 // 		var resp dto.CommandResponse
 // 		json.Unmarshal(m.Payload(), &resp)
 
-		
-
 // 		fmt.Printf("Received reply for correlation ID %s: Widget %d new value %d\n", resp.CorrelationID, resp.WidgetID, resp.Value)
 // 		// h.widgetUsecase.UpdateValue(resp.WidgetID, resp.Value)
 // 		if resp.CorrelationID == targetID {
@@ -143,7 +145,6 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,widgetID uint,cor
 
 // 	receivedResp := <-ch
 // 	fmt.Printf("Final received response: %+v\n", receivedResp)
-
 
 // 	return token.Error()
 // }

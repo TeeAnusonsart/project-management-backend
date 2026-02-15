@@ -9,4 +9,5 @@ type Capability struct {
 
 type CapabilityRepository interface {
 	FindByType(capType string) (*Capability, error)
+	FindByTypeAndControl(capType string, controlType string) (*Capability, error)
 }

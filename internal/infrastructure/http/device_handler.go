@@ -1,12 +1,12 @@
 package http
 
 import (
-	"strconv"
-
-	"github.com/gofiber/fiber/v2"
+	"fmt"
 	"project-home-iot/internal/core/usecase"
 	"project-home-iot/internal/infrastructure/http/dtos"
 	httpmapper "project-home-iot/internal/infrastructure/http/mappers"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type DeviceHandler struct {
@@ -33,9 +33,9 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 
 
 func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
+	id := c.Params("device_id")
 
-	device, err := h.usecase.GetDevice(uint(id))
+	device, err := h.usecase.GetDevice(id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
@@ -44,7 +44,7 @@ func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 }
 
 func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
+	id := c.Params("device_id")
 
 	var req dtos.UpdateDeviceRequest
 
@@ -52,7 +52,7 @@ func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if err := h.usecase.UpdateDevice(uint(id), req.DeviceName); err != nil {
+	if err := h.usecase.UpdateDevice(id, req.DeviceName); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
@@ -62,7 +62,9 @@ func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
 }
 
 func (h *DeviceHandler) PairDevice(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
+	id := c.Params("device_id")
+
+	fmt.Printf("Pairing device with ID: %s\n", id)
 
 	var req dtos.PairDeviceRequest
 
@@ -70,7 +72,7 @@ func (h *DeviceHandler) PairDevice(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if err := h.usecase.PairDevice(uint(id), req.DeviceKey); err != nil {
+	if err := h.usecase.PairDevice(id, req.DeviceKey); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
@@ -80,9 +82,9 @@ func (h *DeviceHandler) PairDevice(c *fiber.Ctx) error {
 }
 
 func (h *DeviceHandler) UnpairDevice(c *fiber.Ctx) error {
-	id, _ := strconv.ParseUint(c.Params("device_id"), 10, 64)
+	id := c.Params("device_id")
 
-	if err := h.usecase.UnpairDevice(uint(id)); err != nil {
+	if err := h.usecase.UnpairDevice(id); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
