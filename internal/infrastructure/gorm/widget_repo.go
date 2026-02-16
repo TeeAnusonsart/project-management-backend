@@ -2,7 +2,7 @@ package gorm
 
 import (
 	"project-home-iot/internal/core/domain"
-
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -125,20 +125,34 @@ func (r *WidgetRepository) UpdateStatus(id uint, status string) error {
 }
 
 func (r *WidgetRepository) ChangeOrder(roomID uint, widgetOrders []uint) error {
-	for index, widgetID := range widgetOrders {
+    for index, widgetID := range widgetOrders {
 
-		err := r.db.Model(&Widget{}).
-			Joins("JOIN devices ON devices.device_id = widgets.device_id").
-			Where("widgets.id = ?", widgetID).
-			Where("devices.room_id = ?", roomID).
-			Update("widget_order", index+1).Error
+        var count int64
+        err := r.db.
+            Table("widgets").
+            Joins("JOIN devices ON devices.device_id = widgets.device_id").
+            Where("widgets.id = ?", widgetID).
+            Where("devices.room_id = ?", roomID).
+            Count(&count).Error
 
-		if err != nil {
-			return err
-		}
-	}
+        if err != nil {
+            return err
+        }
 
-	return nil
+        if count == 0 {
+            return fmt.Errorf("widget %d not in room %d", widgetID, roomID)
+        }
+
+        err = r.db.Model(&Widget{}).
+            Where("id = ?", widgetID).
+            Update("widget_order", index+1).Error
+
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
 }
 
 func (r *WidgetRepository) GetWidgetByStatus(status string) ([]*domain.Widget, error) {
