@@ -15,7 +15,7 @@ var DeviceCapabilityMap = map[string][]CapabilityRef{
     },
     "air": {
         {Type: "toggle", Control: "air-power"},
-        {Type: "adjust", Control: "atemperature"},
+        {Type: "adjust", Control: "temperature"},
     },
     "fan": {
         {Type: "toggle", Control: "fan-power"},

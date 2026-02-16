@@ -87,7 +87,7 @@ func (r *WidgetRepository) FindByRoomID(roomID uint) ([]*domain.Widget, error) {
 	var widgetModels []Widget
 
 	err := r.db.
-		Joins("JOIN devices ON devices.id = widgets.device_id").
+		Joins("JOIN devices ON devices.device_id = widgets.device_id").
 		Where("devices.room_id = ?", roomID).
 		Preload("Device").
 		Preload("Capability").
