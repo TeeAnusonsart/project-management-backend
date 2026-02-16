@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"project-home-iot/internal/database"
 	"project-home-iot/internal/infrastructure/gorm"
-
+	"project-home-iot/internal/auth"
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -29,12 +29,17 @@ func main() {
 		&gorm.Device{}, 
 		&gorm.Widget{}, 
 		&gorm.Log{},
+		&auth.UserAccount{},
 	)
 
 	// db.AutoMigrate(&models.Widget{})
 
 	// opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
-	
+
+	// opts := mqttlib.NewClientOptions().
+    // AddBroker("tcp://broker.hivemq.com:1883").
+    // SetClientID("go-backend-server")
+
 	opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
 
 	client := mqttlib.NewClient(opts)
