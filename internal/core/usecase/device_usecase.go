@@ -70,33 +70,38 @@ func (u *deviceUsecase) UpdateDevice(id string, name string) error {
 }
 
 func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
-	device, err := u.repo.GetByID(id)
-	if err != nil {
-		return err
-	}
+    device, err := u.repo.GetByID(id)
+    if err != nil {
+        return err
+    }
 
-	if err := u.pairCommander.RequestPair(device.DeviceID, deviceKey); err != nil {
-		return err
-	}
+    if err := u.pairCommander.RequestPair(device.DeviceID, deviceKey); err != nil {
+        return err
+    }
 
-	caps := DeviceCapabilityMap[device.DeviceType]
-	for _, capType := range caps {
-		cap, err := u.capabilityRepo.FindByType(capType)
-		if err != nil {
-			return err
-		}
-		widget := &domain.Widget{
-			DeviceID:      device.DeviceID,
-			CapabilityID:  cap.ID,
-			WidgetStatus: "exclude",
-		}
+    // ดึงรายการ Capability ของอุปกรณ์ประเภทนั้นๆ
+    capsRefs := DeviceCapabilityMap[device.DeviceType]
+    
+    for _, ref := range capsRefs {
+        // ใช้ FindByTypeAndControl เพื่อความแม่นยำ
+        cap, err := u.capabilityRepo.FindByTypeAndControl(ref.Type, ref.Control)
+        if err != nil {
+            // อาจจะ log error แล้ว continue หรือ return error ตามความเหมาะสม
+            continue 
+        }
 
-		if err := u.widgetRepo.CreateWidget(widget); err != nil {
-			return err
-		}
-	}
+        widget := &domain.Widget{
+            DeviceID:     device.DeviceID,
+            CapabilityID:   cap.ID,
+            WidgetStatus: "exclude",
+        }
 
-	return u.pairCommander.Subscribe(device.DeviceID)
+        if err := u.widgetRepo.CreateWidget(widget); err != nil {
+            return err
+        }
+    }
+
+    return u.pairCommander.Subscribe(device.DeviceID)
 }
 
 func (u *deviceUsecase) UnpairDevice(id string) error {
