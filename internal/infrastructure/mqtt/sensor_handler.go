@@ -34,7 +34,7 @@ func (h *SensorHandler) HandleSensorMessage(
 		return
 	}
 
-	if payload.CapabilityType == "heartbeat" { 
+	if payload.CapabilityType == "status" && payload.ControlType == "heartbeat" { 
 		_ = h.deviceUC.UpdateHeartbeat(deviceID)
 		return
 	}

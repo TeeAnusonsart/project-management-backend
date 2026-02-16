@@ -9,8 +9,9 @@ type CapabilityRef struct {
 
 var DeviceCapabilityMap = map[string][]CapabilityRef{
     "light": {
-        {Type: "toggle", Control: "switch"},
-        {Type: "brightness", Control: "slider"},
+        {Type: "toggle", Control: "light-switch"},
+		{Type: "mode", Control: "light-system"},
+		{Type: "sensor", Control: "light-intensity"},
     },
     "air": {
         {Type: "toggle", Control: "air-power"},
