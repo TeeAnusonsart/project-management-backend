@@ -38,27 +38,27 @@ services:
       - postgres
     restart: unless-stopped
 
-app:
-  image: golang:1.25
-  container_name: go-app
-  working_dir: /app
-  volumes:
-    - .:/app
-    - go_mod_cache:/go/pkg/mod   # ✅ cache go modules
-    - go_build_cache:/root/.cache/go-build  # ✅ cache build
-  command: go run ./cmd/app
-  environment:
-    DB_HOST: postgres
-    DB_PORT: 5432
-    DB_NAME: ${DB_NAME}
-    DB_USER: ${DB_USER}
-    DB_PASSWORD: ${DB_PASSWORD}
-  depends_on:
-    - postgres
-    - mqtt-broker
-  ports:
-    - "3000:3000"
-  restart: unless-stopped
+  app:
+    image: golang:1.25
+    container_name: go-app
+    working_dir: /app
+    volumes:
+      - .:/app
+      - go_mod_cache:/go/pkg/mod   # ✅ cache go modules
+      - go_build_cache:/root/.cache/go-build  # ✅ cache build
+    command: go run ./cmd/app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres
+      - mqtt-broker
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
 
 
 volumes:
