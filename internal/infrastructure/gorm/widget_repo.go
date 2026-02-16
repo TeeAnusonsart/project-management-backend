@@ -145,7 +145,7 @@ func (r *WidgetRepository) ChangeOrder(roomID uint, widgetOrders []uint) error {
 
         err = r.db.Model(&Widget{}).
             Where("id = ?", widgetID).
-            Update("widget_order", index+1).Error
+            Update("widget_order", index).Error
 
         if err != nil {
             return err
