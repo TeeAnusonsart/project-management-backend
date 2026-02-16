@@ -30,6 +30,7 @@ func (uc *recordLogUsecase) Execute(deviceId string, capabilityType string,contr
         EventType: eventType,
         Value:     value,
     }
+	uc.widgetRepo.UpdateValue(widget.ID,value)
     return uc.recorder.RecordLog(logEntry)
 	// return uc.recorder.RecordLog(widget.ID, eventType, value)
 }
