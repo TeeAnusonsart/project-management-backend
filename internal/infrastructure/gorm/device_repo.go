@@ -65,6 +65,21 @@ func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
 	return result, nil
 }
 
+func (r *DeviceRepository) GetUnpairDevice() ([]*domain.DeviceSummary, error) {
+	var result []*domain.DeviceSummary
+
+	err := r.db.
+		Model(&Device{}).
+		Select("devices.*").
+		Joins("LEFT JOIN widgets ON widgets.device_id = devices.device_id").
+		Where("widgets.device_id IS NULL").
+		Scan(&result).Error
+
+	return result, err
+}
+
+
+
 
 func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
 	var model Device

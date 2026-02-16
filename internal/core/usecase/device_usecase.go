@@ -7,6 +7,7 @@ import (
 type DeviceUsecase interface {
 	RegisterDevice(device *domain.Device) error
 	ListDevices() ([]*domain.DeviceSummary, error)
+	GetUnpairDevice() ([]*domain.DeviceSummary, error)
 	GetDevice(id string) (*domain.DeviceSummary, error)
 	UpdateHeartbeat(id string) error
 	UpdateDevice(id string, name string) error
@@ -58,6 +59,10 @@ func (u *deviceUsecase) ListDevices() ([]*domain.DeviceSummary, error) {
 
 func (u *deviceUsecase) GetDevice(id string) (*domain.DeviceSummary, error) {
 	return u.repo.GetSummaryByID(id)
+}
+
+func (u *deviceUsecase) GetUnpairDevice() ([]*domain.DeviceSummary,error) {
+	return u.repo.GetUnpairDevice()
 }
 
 func (u *deviceUsecase) UpdateDevice(id string, name string) error {

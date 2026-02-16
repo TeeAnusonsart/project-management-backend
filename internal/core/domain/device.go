@@ -10,7 +10,6 @@ type Device struct {
 
 	DeviceName string
 	DeviceType string
-	// Topic      string
 	LastHeartbeat time.Time
 	Widgets []Widget
 }
@@ -58,6 +57,7 @@ type DeviceRepository interface {
 
 	GetAllSummaries() ([]*DeviceSummary, error)
 	GetSummaryByID(deviceID string) (*DeviceSummary, error)
+	GetUnpairDevice() ([]*DeviceSummary ,error)
 
 	GetByID(deviceID string) (*Device, error)
 	UpdateHeartbeat(deviceID string) error

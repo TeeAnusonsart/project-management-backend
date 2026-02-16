@@ -16,7 +16,17 @@ func NewDeviceHandler(u usecase.DeviceUsecase) *DeviceHandler {
 }
 
 func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
-	devices, err := h.usecase.ListDevices()
+	status := c.Query("connected")
+	var devices []*domain.DeviceSummary
+	var err error
+	if status == "ture" {
+		// devices, err = h.usecase.GetUnpairDevice()
+	} else if status == "false" {
+		devices, err = h.usecase.GetUnpairDevice()
+	} else {
+		devices, err = h.usecase.ListDevices()
+	}
+	// devices, err := h.usecase.ListDevices()
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
