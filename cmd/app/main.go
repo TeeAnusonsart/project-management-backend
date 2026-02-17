@@ -5,7 +5,7 @@ import (
 	"project-home-iot/internal/auth"
 	"project-home-iot/internal/database"
 	"project-home-iot/internal/infrastructure/gorm"
-
+	"project-home-iot/internal/auth"
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -30,6 +30,7 @@ func main() {
 		&gorm.Device{}, 
 		&gorm.Widget{}, 
 		&gorm.Log{},
+		&auth.UserAccount{},
 		&auth.UserAccount{},
 	)
 
