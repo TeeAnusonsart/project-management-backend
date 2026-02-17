@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"project-home-iot/internal/auth"
 	"project-home-iot/internal/database"
 	"project-home-iot/internal/infrastructure/gorm"
 
@@ -29,13 +30,16 @@ func main() {
 		&gorm.Device{}, 
 		&gorm.Widget{}, 
 		&gorm.Log{},
+		&auth.UserAccount{},
 	)
+
+	gorm.SeedAll(db)
 
 	// db.AutoMigrate(&models.Widget{})
 
-	// opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
+	opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
 	
-	opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
+	// opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
 
 	client := mqttlib.NewClient(opts)
 

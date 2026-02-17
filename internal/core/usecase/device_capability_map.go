@@ -19,11 +19,9 @@ var DeviceCapabilityMap = map[string][]CapabilityRef{
     },
     "fan": {
         {Type: "toggle", Control: "fan-power"},
-        {Type: "speed", Control: "dropdown"},
+        {Type: "level", Control: "fan-speed"},
     },
-	"air-samsung": {
-        {Type: "toggle", Control: "air-power"},
-		{Type: "toggle", Control: "air-bomb"},
-        {Type: "adjust", Control: "temperature"},
+	"temperature-sensor": {
+        {Type: "sensor", Control: "temperature"},
     },
 }
