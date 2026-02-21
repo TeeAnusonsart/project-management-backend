@@ -35,13 +35,16 @@ func (r *RoomRepository) Create(room *domain.Room) error {
 
 func (r *RoomRepository) FindAll() ([]*domain.Room, error) {
 	var models []Room
-	if err := r.db.Find(&models).Error; err != nil {
+
+	if err := r.db.
+		Preload("Devices").
+		Find(&models).Error; err != nil {
 		return nil, err
 	}
 
 	var rooms []*domain.Room
 	for _, m := range models {
-		rooms = append(rooms, ModelToDomainRoom(&m))
+		rooms = append(rooms, ModelToDomainRoomWithDevices(&m))
 	}
 
 	return rooms, nil
@@ -49,13 +52,15 @@ func (r *RoomRepository) FindAll() ([]*domain.Room, error) {
 
 func (r *RoomRepository) FindByID(id uint) (*domain.Room, error) {
 	var model Room
-	if err := r.db.First(&model, id).Error; err != nil {
+
+	if err := r.db.
+		Preload("Devices").
+		First(&model, id).Error; err != nil {
 		return nil, err
 	}
 
-	return ModelToDomainRoom(&model), nil
+	return ModelToDomainRoomWithDevices(&model), nil
 }
-
 func (r *RoomRepository) Update(room *domain.Room) error {
 	return r.db.Model(&Room{}).
 		Where("id = ?", room.ID).
@@ -107,6 +112,23 @@ func ModelToDomainRoom(m *Room) *domain.Room {
 		ID:   m.ID,
 		Name: m.Name,
 	}
+}
+
+func ModelToDomainRoomWithDevices(m *Room) *domain.Room {
+	room := &domain.Room{
+		ID:   m.ID,
+		Name: m.Name,
+	}
+
+	for _, d := range m.Devices {
+		room.Devices = append(room.Devices, domain.DeviceSummary{
+			DeviceID:   d.DeviceID,
+			DeviceName: d.DeviceName,
+			DeviceType: d.DeviceType,
+		})
+	}
+
+	return room
 }
 
 
