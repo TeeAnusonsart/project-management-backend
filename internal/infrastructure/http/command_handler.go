@@ -27,7 +27,7 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		CapabilityID uint `json:"capability_id"`
+		Email string `json:"email"`
 		Value        string   `json:"value"`
 	}
 
@@ -46,7 +46,7 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 		ReplyTopic:     "devices/"+correlationID+"/command/response",
 	}
 
-	if err := h.commandUsecase.SendCommand(cmd, uint(widgetID), correlationID); err != nil {
+	if err := h.commandUsecase.SendCommand(cmd,req.Email, uint(widgetID), correlationID); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 

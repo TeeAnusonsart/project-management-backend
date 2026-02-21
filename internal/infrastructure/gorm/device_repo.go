@@ -3,8 +3,9 @@ package gorm
 import (
 	"project-home-iot/internal/core/domain"
 	// "project-home-iot/internal/infrastructure/gorm/models"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Device struct {
@@ -13,8 +14,8 @@ type Device struct {
 	DeviceName string
 	DeviceType string
 
-	RoomID *uint
-	Room   *Room `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	RoomID        *uint
+	Room          *Room `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	LastHeartbeat time.Time
 
 	Widgets []Widget `gorm:"foreignKey:DeviceID"`
@@ -49,7 +50,6 @@ func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error)
 	return ModelToDomainDevice(&model), nil
 }
 
-
 func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
 	var result []*domain.DeviceSummary
 
@@ -74,12 +74,23 @@ func (r *DeviceRepository) GetUnpairDevice() ([]*domain.DeviceSummary, error) {
 		Joins("LEFT JOIN widgets ON widgets.device_id = devices.device_id").
 		Where("widgets.device_id IS NULL").
 		Scan(&result).Error
-
 	return result, err
 }
 
+func (r *DeviceRepository) GetPairedDevice() ([]*domain.DeviceSummary, error) {
+	var result []*domain.DeviceSummary
 
-
+	err := r.db.
+		Model(&Device{}).
+		Where("EXISTS (?)",
+			r.db.
+				Select("1").
+				Table("widgets").
+				Where("widgets.device_id = devices.device_id"),
+		).
+		Scan(&result).Error
+	return result, err
+}
 
 func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
 	var model Device
@@ -109,7 +120,6 @@ func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, err
 	return &result, nil
 }
 
-
 func (r *DeviceRepository) UpdateName(id string, name string) error {
 	return r.db.Model(&Device{}).
 		Where("device_id = ?", id).
@@ -134,7 +144,6 @@ func (r *DeviceRepository) UpdateHeartbeat(deviceID string) error {
 		Update("last_heartbeat", gorm.Expr("NOW()")).Error
 }
 
-
 func DomainToDeviceModel(d *domain.Device) *Device {
 	return &Device{
 		DeviceID:   d.DeviceID,
@@ -145,9 +154,8 @@ func DomainToDeviceModel(d *domain.Device) *Device {
 
 func ModelToDomainDevice(m *Device) *domain.Device {
 	return &domain.Device{
-		DeviceID:         m.DeviceID,
+		DeviceID:   m.DeviceID,
 		DeviceName: m.DeviceName,
 		DeviceType: m.DeviceType,
 	}
 }
-

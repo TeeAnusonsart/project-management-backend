@@ -8,28 +8,28 @@ import (
 type Device struct {
 	DeviceID string
 
-	DeviceName string
-	DeviceType string
+	DeviceName    string
+	DeviceType    string
 	LastHeartbeat time.Time
-	Widgets []Widget
+	Widgets       []Widget
 }
 
 type DeviceSummary struct {
-	DeviceID   string
+	DeviceID      string
 	LastHeartbeat time.Time
-	DeviceName string
-	DeviceType string
+	DeviceName    string
+	DeviceType    string
 }
 
 type DeviceCommand struct {
-	CapabilityType        string
-	ControlType string
+	CapabilityType string
+	ControlType    string
 	Value          string
 	ReplyTopic     string
 }
 
 type CommandResponse struct {
-	Status        string
+	Status string
 }
 
 func (d *Device) Validate() error {
@@ -48,16 +48,14 @@ func (d *Device) Validate() error {
 	return nil
 }
 
-
-
 type DeviceRepository interface {
-	
 	CreateDevice(device *Device) error
 	FindByWidgetID(widgetID uint) (*Device, error)
 
 	GetAllSummaries() ([]*DeviceSummary, error)
 	GetSummaryByID(deviceID string) (*DeviceSummary, error)
-	GetUnpairDevice() ([]*DeviceSummary ,error)
+	GetUnpairDevice() ([]*DeviceSummary, error)
+	GetPairedDevice() ([]*DeviceSummary, error)
 
 	GetByID(deviceID string) (*Device, error)
 	UpdateHeartbeat(deviceID string) error
@@ -72,6 +70,5 @@ type PairCommander interface {
 }
 
 type DeviceCommander interface {
-	RequestCommand(deviceId string, cmd *DeviceCommand,correlationID string) (*CommandResponse, error)
+	RequestCommand(deviceId string, cmd *DeviceCommand, correlationID string) (*CommandResponse, error)
 }
-

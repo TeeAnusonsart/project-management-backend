@@ -10,6 +10,7 @@ type WidgetUsecase interface {
 	ListWidgets() ([]*domain.Widget, error)
 	GetWidget(id uint) (*domain.Widget, error)
 	GetWidgetByStatus(status string) ([]*domain.Widget, error)
+	GetLogs(id uint)([]*domain.Log, error)
 	ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error)
 
 	UpdateValue(widgetID uint, value string) error
@@ -19,10 +20,11 @@ type WidgetUsecase interface {
 
 type widgetUsecase struct {
 	widgetRepo domain.WidgetRepository
+	recorderRepo domain.Recorder
 }
 
-func NewWidgetUsecase(wr domain.WidgetRepository) WidgetUsecase {
-	return &widgetUsecase{widgetRepo: wr}
+func NewWidgetUsecase(wr domain.WidgetRepository,rr domain.Recorder) WidgetUsecase {
+	return &widgetUsecase{widgetRepo: wr,recorderRepo: rr}
 }
 
 func (u *widgetUsecase) CreateWidget(widget *domain.Widget) error {
@@ -47,6 +49,10 @@ func (u *widgetUsecase) ListWidgets() ([]*domain.Widget, error) {
 
 func (u *widgetUsecase) GetWidget(id uint) (*domain.Widget, error) {
 	return u.widgetRepo.FindByID(id)
+}
+
+func (u *widgetUsecase) GetLogs(id uint) ([]*domain.Log, error){
+	return u.recorderRepo.GetLogByWidgetID(id)
 }
 
 func (u *widgetUsecase) ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error) {
