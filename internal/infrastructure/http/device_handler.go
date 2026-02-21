@@ -1,10 +1,11 @@
 package http
 
 import (
+	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
 	"time"
+
 	"github.com/gofiber/fiber/v2"
-	"project-home-iot/internal/core/domain"
 )
 
 type DeviceHandler struct {
@@ -16,17 +17,29 @@ func NewDeviceHandler(u usecase.DeviceUsecase) *DeviceHandler {
 }
 
 func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
-	status := c.Query("connected")
+	// status := c.Query("connected")
 	var devices []*domain.DeviceSummary
 	var err error
-	if status == "ture" {
-		// devices, err = h.usecase.GetUnpairDevice()
-	} else if status == "false" {
-		devices, err = h.usecase.GetUnpairDevice()
-	} else {
+	connected := c.Query("connected")
+
+	if connected == "" {
 		devices, err = h.usecase.ListDevices()
+	} else {
+		isConnected := c.QueryBool("connected")
+		if isConnected {
+			devices, err = h.usecase.GetPairedDevice()
+		} else {
+			devices, err = h.usecase.GetUnpairDevice()
+		}
 	}
-	// devices, err := h.usecase.ListDevices()
+	// if status == "ture" {
+	// 	fmt.Println(status)
+	// 	devices, err = h.usecase.GetPairedDevice()
+	// } else if status == "false" {
+	// 	devices, err = h.usecase.GetUnpairDevice()
+	// } else {
+	// 	devices, err = h.usecase.ListDevices()
+	// }
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -38,7 +51,6 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"data": response})
 }
-
 
 func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 	id := c.Params("device_id")
@@ -108,17 +120,17 @@ type PairDeviceRequest struct {
 }
 
 type DeviceResponse struct {
-	DeviceID         string   `json:"device_id"`
-	DeviceLastHeartbeat time.Time   `json:"device_last_heartbeat"`
-	DeviceName string `json:"device_name"`
-	DeviceType string `json:"device_type"`
+	DeviceID            string    `json:"device_id"`
+	DeviceLastHeartbeat time.Time `json:"device_last_heartbeat"`
+	DeviceName          string    `json:"device_name"`
+	DeviceType          string    `json:"device_type"`
 }
 
 func ToDeviceResponse(d *domain.DeviceSummary) DeviceResponse {
 	return DeviceResponse{
-		DeviceID:         d.DeviceID,
+		DeviceID:            d.DeviceID,
 		DeviceLastHeartbeat: d.LastHeartbeat,
-		DeviceName: d.DeviceName,
-		DeviceType: d.DeviceType,
+		DeviceName:          d.DeviceName,
+		DeviceType:          d.DeviceType,
 	}
 }

@@ -58,6 +58,7 @@ type DeviceRepository interface {
 	GetAllSummaries() ([]*DeviceSummary, error)
 	GetSummaryByID(deviceID string) (*DeviceSummary, error)
 	GetUnpairDevice() ([]*DeviceSummary ,error)
+	GetPairedDevice() ([]*DeviceSummary ,error)
 
 	GetByID(deviceID string) (*Device, error)
 	UpdateHeartbeat(deviceID string) error
