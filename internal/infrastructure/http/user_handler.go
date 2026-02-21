@@ -41,11 +41,8 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	user := &domain.User{
-		Username:    req.Username,
-		Name:        req.Name,
-		Password:    req.Password,
 		Email:       req.Email,
-		ProfilePath: req.ProfilePath,
+		Role: domain.RoleUser,
 	}
 
 	if err := h.usecase.CreateUser(user); err != nil {
@@ -86,26 +83,6 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	})
 }
 
-func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
-	}
-
-	var req ChangePasswordRequest
-
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	if err := h.usecase.ChangePassword(uint(id), req.OldPassword, req.NewPassword); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
-	})
-}
 
 func (h *UserHandler) UploadProfile(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
@@ -144,11 +121,7 @@ func (h *UserHandler) UploadProfile(c *fiber.Ctx) error {
 
 func ToUserResponse(u *domain.User) UserResponse {
 	return UserResponse{
-		UserID:      u.ID,
-		Username:    u.Username,
-		Name:        u.Name,
 		Email:       u.Email,
-		ProfilePath: u.ProfilePath,
 		Role:        string(u.Role),
 	}
 }

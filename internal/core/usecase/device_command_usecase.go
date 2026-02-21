@@ -5,7 +5,7 @@ import (
 )
 
 type CommandUsecase interface {
-	SendCommand(cmd *domain.DeviceCommand, widgetID uint, correlationID string) error
+	SendCommand(cmd *domain.DeviceCommand,userEmail string, widgetID uint, correlationID string) error
 }
 
 type commandUsecase struct {
@@ -24,7 +24,7 @@ func NewCommandUsecase(dr domain.DeviceRepository, wr domain.WidgetRepository, d
 	}
 }
 
-func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand, widgetID uint, correlationID string) error {
+func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,userEmail string, widgetID uint, correlationID string) error {
 	device, err := u.deviceRepo.FindByWidgetID(widgetID)
 	if err != nil {
 		return err
@@ -41,6 +41,7 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand, widgetID uint, c
 	err = u.recorder.RecordLog(&domain.Log{
 		WidgetID:  widgetID,
 		EventType: "command",
+		Actor: userEmail,
 		Value:     cmd.Value,
 	})
 	if err != nil {

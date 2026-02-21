@@ -17,7 +17,7 @@ type Widget struct {
 type Log struct {
 	ID        uint
 	WidgetID  uint
-	ActorType string
+	Actor     string
 	Value     string
 	EventType string
 }
@@ -36,11 +36,11 @@ type WidgetRepository interface {
 	UpdateValue(widgetID uint, value string) error
 	UpdateStatus(id uint, status string) error
 	ChangeOrder(roomID uint, widgetOrders []uint) error
-
 }
 
 type Recorder interface {
 	// DataReceive(log *Log) error
 	// RecordLog(widgetId uint,eventType string,value uint) error
 	RecordLog(log *Log) error
+	GetLogByDeviceWidgetID(widgetID uint) ([]*Log, error)
 }

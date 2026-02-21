@@ -24,6 +24,9 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 		})
 	})
 
+	logGroup := api.Group("/logs")
+	logGroup.Get("/")
+
 	// device
 	deviceGroup := api.Group("/devices")
 	deviceGroup.Get("/", handlers.Device.ListDevices)
@@ -66,6 +69,6 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	userGroup.Post("/", handlers.User.CreateUser)
 	userGroup.Get("/:user_id", handlers.User.GetUser)
 	userGroup.Delete("/:user_id", handlers.User.DeleteUser)
-	userGroup.Post("/:user_id/change-password", handlers.User.ChangePassword)
+	// userGroup.Post("/:user_id/change-password", handlers.User.ChangePassword)
 	userGroup.Post("/:user_id/upload-profile", handlers.User.UploadProfile)
 }

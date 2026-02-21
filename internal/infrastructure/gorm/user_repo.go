@@ -6,12 +6,8 @@ import (
 )
 
 type User struct {
-	gorm.Model
-	Username    string
-	Name        string
-	Password    string
-	Email       string
-	ProfilePath string
+	Email       string `gorm:"primaryKey;autoIncrement:false"`
+	Name string
 	Role        string
 }
 
@@ -28,7 +24,7 @@ func (r *UserRepository) Create(user *domain.User) error {
 	if err := r.db.Create(model).Error; err != nil {
 		return err
 	}
-	user.ID = model.ID
+	user.Email = model.Email
 	return nil
 }
 
@@ -72,24 +68,16 @@ func (r *UserRepository) UpdateProfilePath(id uint, path string) error {
 
 func DomainToUserModel(u *domain.User) *User {
 	return &User{
-		Model:       gorm.Model{ID: u.ID},
-		Username:    u.Username,
-		Name:        u.Name,
-		Password:    u.Password,
 		Email:       u.Email,
-		ProfilePath: u.ProfilePath,
+		Name: u.Name,
 		Role:        string(u.Role),
 	}
 }
 
 func ModelToDomainUser(m *User) *domain.User {
 	return &domain.User{
-		ID:          m.ID,
-		Username:    m.Username,
-		Name:        m.Name,
-		Password:    m.Password,
 		Email:       m.Email,
-		ProfilePath: m.ProfilePath,
+		Name: m.Name,
 		Role:        domain.UserRole(m.Role),
 	}
 }
