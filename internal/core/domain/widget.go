@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type Widget struct {
 	ID uint
 
@@ -20,6 +22,7 @@ type Log struct {
 	Actor     string
 	Value     string
 	EventType string
+	CreatedAt  time.Time
 }
 
 type WidgetRepository interface {
@@ -42,5 +45,5 @@ type Recorder interface {
 	// DataReceive(log *Log) error
 	// RecordLog(widgetId uint,eventType string,value uint) error
 	RecordLog(log *Log) error
-	GetLogByDeviceWidgetID(widgetID uint) ([]*Log, error)
+	GetLogByWidgetID(widgetID uint) ([]*Log, error)
 }

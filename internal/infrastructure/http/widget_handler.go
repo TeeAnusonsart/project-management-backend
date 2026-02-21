@@ -55,6 +55,25 @@ func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 	return c.JSON(ToWidgetResponse(w))
 }
 
+func (h *WidgetHandler) GetLogs(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("widget_id"), 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	logs,err := h.usecase.GetLogs(uint(id))
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	
+	var response []LogResponse
+	for _, l := range logs {
+		response = append(response, ToLogResponse(l))
+	}
+
+	return c.JSON(fiber.Map{"data": response})
+}
+
 
 func (h *WidgetHandler) CreateWidget(c *fiber.Ctx) error {
 	var req struct {
@@ -191,6 +210,17 @@ func (h *WidgetHandler) DeleteWidget(c *fiber.Ctx) error {
 	})
 }
 
+func ToLogResponse(l *domain.Log) LogResponse {
+	response := LogResponse{
+		Value: l.Value,
+		EventType: l.EventType,
+		Actor: l.Actor,
+		CreatedAt: l.CreatedAt,
+		
+	}
+	return response
+}
+
 func ToWidgetResponse(w *domain.Widget) WidgetResponse {
 
 	response := WidgetResponse{
@@ -218,6 +248,14 @@ func ToWidgetResponse(w *domain.Widget) WidgetResponse {
 	}
 
 	return response
+}
+
+type LogResponse struct {
+	Value string `json:"value"`
+	EventType string `json:"event_type"`
+	Actor string `json:"actor"`
+	// WidgetID uint `json:"widget_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type WidgetResponse struct {

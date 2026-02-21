@@ -24,8 +24,6 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 		})
 	})
 
-	logGroup := api.Group("/logs")
-	logGroup.Get("/")
 
 	// device
 	deviceGroup := api.Group("/devices")
@@ -55,6 +53,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	widgetGroup.Get("/", handlers.Widget.ListWidgets)
 	// widgetGroup.Get("/", handlers.Widget.GetWidgetByStatus)
 	widgetGroup.Get("/:widget_id", handlers.Widget.GetWidget)
+	widgetGroup.Get("/:widget_id/logs", handlers.Widget.GetLogs)
 	widgetGroup.Put("/:widget_id", handlers.Widget.UpdateWidget)
 	widgetGroup.Patch("/:widget_id/status", handlers.Widget.ChangeStatus)
 	widgetGroup.Delete("/:widget_id", handlers.Widget.DeleteWidget)

@@ -42,16 +42,17 @@ func (r *RecorderRepository) RecordLog(log *domain.Log) error {
     return nil
 }
 
-func (r *RecorderRepository) GetLogByDeviceWidgetID(widgetID uint) ([]*domain.Log, error) {
+func (r *RecorderRepository) GetLogByWidgetID(widgetID uint) ([]*domain.Log, error) {
 	var result []*domain.Log
 
 	err := r.db.
 		Model(&Log{}).
-		Select("value, event_type, widget_id,actor").
+		Select("value, event_type,actor,created_at").
 		Where("widget_id = ?", widgetID).
 		Scan(&result).Error
 
 	return result, err
+
 }
 
 func LogDomainToModel(d *domain.Log) *Log {
@@ -66,7 +67,7 @@ func LogDomainToModel(d *domain.Log) *Log {
 func LogModelToDomain(m *Log) *domain.Log {
 	return &domain.Log{
 		ID:        m.ID,
-		WidgetID:  m.WidgetID,
+		// WidgetID:  m.WidgetID,
 		Actor: m.Actor,
 		Value:     m.Value,
 		EventType: m.EventType,
