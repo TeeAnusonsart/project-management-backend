@@ -40,7 +40,10 @@ func main() {
 	
 	// opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
 
-	client := mqttlib.NewClient(opts)
+	// opts := mqttlib.NewClientOptions().
+    // AddBroker("tcp://broker.hivemq.com:1883").
+    // SetClientID("go-backend-server")
+	// client := mqttlib.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
