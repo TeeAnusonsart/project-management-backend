@@ -24,4 +24,9 @@ var DeviceCapabilityMap = map[string][]CapabilityRef{
 	"temperature-sensor": {
         {Type: "sensor", Control: "temperature"},
     },
+    "temperature_humidity": {
+        {Type: "sensor", Control: "humidity"},
+        {Type: "adjust", Control: "content"},
+        {Type: "mode", Control: "display"},
+    },
 }

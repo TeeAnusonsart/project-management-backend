@@ -1,10 +1,10 @@
 package domain
 
 type Room struct {
-	ID   uint
-	Name string
+	ID      uint
+	Name    string
+	Devices []DeviceSummary
 }
-
 
 type RoomRepository interface {
 	Create(room *Room) error

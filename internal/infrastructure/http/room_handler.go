@@ -121,9 +121,20 @@ func (h *RoomHandler) ListDevices(c *fiber.Ctx) error {
 }
 
 func ToRoomResponse(r *domain.Room) RoomResponse {
+	var devices []DeviceResponse
+
+	for _, d := range r.Devices {
+		devices = append(devices, DeviceResponse{
+			DeviceID:   d.DeviceID,
+			DeviceName: d.DeviceName,
+			DeviceType: d.DeviceType,
+		})
+	}
+
 	return RoomResponse{
 		RoomID:   r.ID,
 		RoomName: r.Name,
+		Devices:  devices,
 	}
 }
 
@@ -141,6 +152,7 @@ type AddDeviceToRoomRequest struct {
 }
 
 type RoomResponse struct {
-    RoomID   uint   `json:"room_id"`
-    RoomName string `json:"room_name"`
+	RoomID   uint             `json:"room_id"`
+	RoomName string           `json:"room_name"`
+	Devices  []DeviceResponse `json:"devices"`
 }
