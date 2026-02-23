@@ -31,6 +31,8 @@ type WidgetRepository interface {
 	Update(widget *Widget) error
 	Delete(id uint) error
 
+	DeleteByDeviceId(deviceID string) error
+
 	FindAll() ([]*Widget, error)
 	FindByID(id uint) (*Widget, error)
 	FindByRoomID(roomID uint) ([]*Widget, error)

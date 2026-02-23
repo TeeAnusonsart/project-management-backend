@@ -110,7 +110,15 @@ func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
 }
 
 func (u *deviceUsecase) UnpairDevice(id string) error {
-	return u.repo.Unpair(id)
+
+	if err := u.widgetRepo.DeleteByDeviceId(id); err != nil {
+		return err
+	}
+	
+	if err := u.repo.Unpair(id); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (u *deviceUsecase) UpdateHeartbeat(id string) error {

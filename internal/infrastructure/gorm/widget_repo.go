@@ -46,6 +46,8 @@ func (r *WidgetRepository) UpdateValue(widgetID uint, value string) error {
 		Update("value", value).Error
 }
 
+
+
 func (r *WidgetRepository) FindAll() ([]*domain.Widget, error) {
 	var widgetModels []Widget
 
@@ -108,6 +110,13 @@ func (r *WidgetRepository) FindByRoomID(roomID uint) ([]*domain.Widget, error) {
 
 func (r *WidgetRepository) Delete(id uint) error {
 	return r.db.Delete(&Widget{}, id).Error
+}
+
+func (r *WidgetRepository) DeleteByDeviceId(deviceID string) error {
+	return r.db.Unscoped().
+		Where("device_id = ?", deviceID).
+		Delete(&Widget{}).
+		Error
 }
 
 func (r *WidgetRepository) Update(widget *domain.Widget) error {

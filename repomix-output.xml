@@ -71,6 +71,7 @@ internal/infrastructure/gorm/capability_repo.go
 internal/infrastructure/gorm/device_repo.go
 internal/infrastructure/gorm/recorder_repo.go
 internal/infrastructure/gorm/room_repo.go
+internal/infrastructure/gorm/seeder.go
 internal/infrastructure/gorm/user_repo.go
 internal/infrastructure/gorm/widget_repo.go
 internal/infrastructure/http/command_handler.go
@@ -86,6 +87,7 @@ internal/infrastructure/mqtt/sensor_subscriber.go
 internal/middleware/jwt_middleware.go
 internal/provider/command_provider
 mosquitto/mosquitto.conf
+nginx/nginx.conf
 README.md
 </directory_structure>
 
@@ -321,6 +323,115 @@ func ConnectDB() *gorm.DB {
 }
 </file>
 
+<file path="internal/infrastructure/gorm/seeder.go">
+package gorm
+
+import (
+	"log"
+	"project-home-iot/internal/auth"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+func SeedAll(db *gorm.DB) error {
+	SeedRooms(db)
+	SeedCapabilities(db)
+	SeedUsers(db)
+	SeedDevices(db)
+	log.Println("Seeding completed!")
+	return nil
+}
+
+func SeedRooms(db *gorm.DB) {
+	rooms := []Room{
+		{Name: "Living Room"},
+		{Name: "Bedroom"},
+		{Name: "Kitchen"},
+	}
+	for _, r := range rooms {
+		db.FirstOrCreate(&r, Room{Name: r.Name})
+	}
+}
+func SeedCapabilities(db *gorm.DB) {
+	capabilities := []Capability{
+		{CapabilityType: "toggle", ControlType: "light-switch"},
+		{CapabilityType: "mode", ControlType: "light-system"},
+		{CapabilityType: "sensor", ControlType: "light-intensity"},
+		{CapabilityType: "toggle", ControlType: "air-power"},
+		{CapabilityType: "adjust", ControlType: "air-temperature"},
+		{CapabilityType: "toggle", ControlType: "fan-power"},
+		{CapabilityType: "level", ControlType: "fan-speed"},
+		{CapabilityType: "sensor", ControlType: "temperature"},
+	}
+	for _, c := range capabilities {
+		db.FirstOrCreate(&c, Capability{
+			CapabilityType: c.CapabilityType,
+			ControlType:    c.ControlType,
+		})
+	}
+}
+
+func SeedUsers(db *gorm.DB) error {
+	password := "123456"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user := auth.UserAccount{Username: "testuser", Password: string(hashedPassword)}
+	db.FirstOrCreate(&user, auth.UserAccount{Username: user.Username})
+	return nil
+}
+
+func SeedDevices(db *gorm.DB) {
+
+	// var livingRoom Room
+	// db.Where("room_name = ?", "Living Room").First(&livingRoom)
+
+	// var bedRoom Room
+	// db.Where("room_name = ?", "Bedroom").First(&bedRoom)
+
+	devices := []Device{
+		{
+			DeviceID:      "Light-001",
+			DeviceName:    "Main Light",
+			DeviceType:    "light",
+			RoomID:        nil,
+			LastHeartbeat: time.Now(),
+		},
+		{
+			DeviceID:      "Air-001",
+			DeviceName:    "Air Conditioner",
+			DeviceType:    "air",
+			RoomID:        nil,
+			LastHeartbeat: time.Now(),
+		},
+		{
+			DeviceID:      "Sensor-001",
+			DeviceName:    "Tem Sensor",
+			DeviceType:    "temperature-sensor",
+			RoomID:        nil,
+			LastHeartbeat: time.Now(),
+		},
+		{
+			DeviceID:      "Sensor-001",
+			DeviceName:    "Unpaired Sensor",
+			DeviceType:    "Sensor",
+			RoomID:        nil,
+			LastHeartbeat: time.Now(),
+		},
+	}
+
+	for _, d := range devices {
+		err := db.FirstOrCreate(&d, Device{DeviceID: d.DeviceID}).Error
+		if err != nil {
+			log.Printf("Could not seed device %s: %v", d.DeviceID, err)
+		}
+	}
+}
+</file>
+
 <file path="internal/middleware/jwt_middleware.go">
 package middleware
 
@@ -374,6 +485,25 @@ persistence true
 persistence_location /mosquitto/data/
 </file>
 
+<file path="nginx/nginx.conf">
+events {}
+
+http {
+    server {
+        listen 80;
+
+        location / {
+            proxy_pass http://app:3000;
+            proxy_http_version 1.1;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+    }
+}
+</file>
+
 <file path="internal/auth/service.go">
 package auth
 
@@ -425,195 +555,6 @@ func (s *AuthService) Login(username, password string) (string, error) {
 }
 </file>
 
-<file path="internal/core/usecase/user_usecase.go">
-package usecase
-
-import (
-	"errors"
-
-	"golang.org/x/crypto/bcrypt"
-	"project-home-iot/internal/core/domain"
-)
-
-type UserUsecase interface {
-	CreateUser(user *domain.User) error
-	ListUsers() ([]*domain.User, error)
-	GetUser(id uint) (*domain.User, error)
-	DeleteUser(id uint) error
-	ChangePassword(id uint, oldPassword, newPassword string) error
-	UploadProfile(id uint, filePath string) error
-}
-
-type userUsecase struct {
-	userRepo domain.UserRepository
-}
-
-func NewUserUsecase(ur domain.UserRepository) UserUsecase {
-	return &userUsecase{userRepo: ur}
-}
-
-func (u *userUsecase) CreateUser(user *domain.User) error {
-	if user.Username == "" {
-		return errors.New("username is required")
-	}
-	if user.Password == "" {
-		return errors.New("password is required")
-	}
-
-	if user.Role == "" {
-		user.Role = domain.RoleUser
-	}
-
-	if !user.Role.IsValid() {
-		return errors.New("invalid role")
-	}
-
-	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	user.Password = string(hashed)
-	return u.userRepo.Create(user)
-}
-
-
-func (u *userUsecase) ListUsers() ([]*domain.User, error) {
-	return u.userRepo.FindAll()
-}
-
-func (u *userUsecase) GetUser(id uint) (*domain.User, error) {
-	return u.userRepo.FindByID(id)
-}
-
-func (u *userUsecase) DeleteUser(id uint) error {
-	return u.userRepo.Delete(id)
-}
-
-func (u *userUsecase) ChangePassword(id uint, oldPassword, newPassword string) error {
-	user, err := u.userRepo.FindByID(id)
-	if err != nil {
-		return err
-	}
-
-	if err := bcrypt.CompareHashAndPassword(
-		[]byte(user.Password),
-		[]byte(oldPassword),
-	); err != nil {
-		return errors.New("old password is incorrect")
-	}
-
-	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	return u.userRepo.UpdatePassword(id, string(hashed))
-}
-
-func (u *userUsecase) UploadProfile(id uint, filePath string) error {
-	return u.userRepo.UpdateProfilePath(id, filePath)
-}
-</file>
-
-<file path="internal/infrastructure/gorm/user_repo.go">
-package gorm
-
-import (
-	"project-home-iot/internal/core/domain"
-	"gorm.io/gorm"
-)
-
-type User struct {
-	gorm.Model
-	Username    string
-	Name        string
-	Password    string
-	Email       string
-	ProfilePath string
-	Role        string
-}
-
-type UserRepository struct {
-	db *gorm.DB
-}
-
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
-}
-
-func (r *UserRepository) Create(user *domain.User) error {
-	model := DomainToUserModel(user)
-	if err := r.db.Create(model).Error; err != nil {
-		return err
-	}
-	user.ID = model.ID
-	return nil
-}
-
-func (r *UserRepository) FindAll() ([]*domain.User, error) {
-	var models []User
-	if err := r.db.Find(&models).Error; err != nil {
-		return nil, err
-	}
-
-	var result []*domain.User
-	for _, m := range models {
-		result = append(result, ModelToDomainUser(&m))
-	}
-	return result, nil
-}
-
-func (r *UserRepository) FindByID(id uint) (*domain.User, error) {
-	var model User
-	if err := r.db.First(&model, id).Error; err != nil {
-		return nil, err
-	}
-	return ModelToDomainUser(&model), nil
-}
-
-func (r *UserRepository) Delete(id uint) error {
-	return r.db.Delete(&User{}, id).Error
-}
-
-func (r *UserRepository) UpdatePassword(id uint, hashedPassword string) error {
-	return r.db.Model(&User{}).
-		Where("id = ?", id).
-		Update("password", hashedPassword).Error
-}
-
-func (r *UserRepository) UpdateProfilePath(id uint, path string) error {
-	return r.db.Model(&User{}).
-		Where("id = ?", id).
-		Update("profile_path", path).Error
-}
-
-
-func DomainToUserModel(u *domain.User) *User {
-	return &User{
-		Model:       gorm.Model{ID: u.ID},
-		Username:    u.Username,
-		Name:        u.Name,
-		Password:    u.Password,
-		Email:       u.Email,
-		ProfilePath: u.ProfilePath,
-		Role:        string(u.Role),
-	}
-}
-
-func ModelToDomainUser(m *User) *domain.User {
-	return &domain.User{
-		ID:          m.ID,
-		Username:    m.Username,
-		Name:        m.Name,
-		Password:    m.Password,
-		Email:       m.Email,
-		ProfilePath: m.ProfilePath,
-		Role:        domain.UserRole(m.Role),
-	}
-}
-</file>
-
 <file path="README.md">
 # project-management
 </file>
@@ -659,136 +600,6 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 )
-</file>
-
-<file path="internal/core/domain/room.go">
-package domain
-
-type Room struct {
-	ID   uint
-	Name string
-}
-
-
-type RoomRepository interface {
-	Create(room *Room) error
-	FindAll() ([]*Room, error)
-	FindByID(id uint) (*Room, error)
-	Update(room *Room) error
-	Delete(id uint) error
-
-	AddDevice(roomID uint, deviceID string) error
-	ListDeviceSummaries(roomID uint) ([]*DeviceSummary, error)
-}
-</file>
-
-<file path="internal/core/domain/user.go">
-package domain
-
-type User struct {
-	ID          uint
-	Username    string
-	Name        string
-	Password    string
-	Role        UserRole
-	Email       string
-	ProfilePath string
-}
-
-type UserRole string
-
-const (
-	RoleAdmin UserRole = "ADMIN"
-	RoleUser  UserRole = "USER"
-)
-
-func (r UserRole) IsValid() bool {
-	switch r {
-	case RoleAdmin, RoleUser:
-		return true
-	default:
-		return false
-	}
-}
-
-type UserRepository interface {
-	Create(user *User) error
-	FindAll() ([]*User, error)
-	FindByID(id uint) (*User, error)
-	Delete(id uint) error
-
-	UpdatePassword(id uint, hashedPassword string) error
-	UpdateProfilePath(id uint, path string) error
-}
-</file>
-
-<file path="internal/core/usecase/device_capability_map.go">
-package usecase
-
-// ในไฟล์ usecase/device_map.go (หรือที่เก็บ Map เดิม)
-
-type CapabilityRef struct {
-    Type    string
-    Control string
-}
-
-var DeviceCapabilityMap = map[string][]CapabilityRef{
-    "light": {
-        {Type: "toggle", Control: "switch"},
-        {Type: "brightness", Control: "slider"},
-    },
-    "air": {
-        {Type: "toggle", Control: "air-power"},
-        {Type: "adjust", Control: "atemperature"},
-    },
-    "fan": {
-        {Type: "toggle", Control: "fan-power"},
-        {Type: "speed", Control: "dropdown"},
-    },
-	"air-samsung": {
-        {Type: "toggle", Control: "air-power"},
-		{Type: "toggle", Control: "air-bomb"},
-        {Type: "adjust", Control: "temperature"},
-    },
-}
-</file>
-
-<file path="internal/core/usecase/record_log_usecase.go">
-package usecase
-
-import (
-	"project-home-iot/internal/core/domain"
-)
-
-type RecordLogUsecase interface {
-	// Execute(deviceId string, capabilityId uint, eventType string, value uint) error
-	Execute(deviceId string, capabilityType string,controlType string, eventType string, value string) error
-}
-
-type recordLogUsecase struct {
-	widgetRepo domain.WidgetRepository
-	capabilityRepo domain.CapabilityRepository
-	recorder domain.Recorder
-}
-
-func NewRecordLogUsecase(r domain.Recorder,wr domain.WidgetRepository,cr domain.CapabilityRepository) RecordLogUsecase {
-	return &recordLogUsecase{recorder: r, widgetRepo: wr,capabilityRepo: cr}
-}
-
-func (uc *recordLogUsecase) Execute(deviceId string, capabilityType string,controlType string, eventType string, value string) error {
-	capability,err := uc.capabilityRepo.FindByTypeAndControl(capabilityType, controlType)
-	if err != nil {
-		return err
-	}
-	widget := uc.widgetRepo.GetWidgetIdByDeviceAndCapability(deviceId, capability.ID)
-	logEntry := &domain.Log{
-        WidgetID:  widget.ID,
-        EventType: eventType,
-        Value:     value,
-    }
-    return uc.recorder.RecordLog(logEntry)
-	// return uc.recorder.RecordLog(widget.ID, eventType, value)
-}
 </file>
 
 <file path="internal/core/usecase/room_usecase.go">
@@ -847,6 +658,63 @@ func (u *roomUsecase) AddDeviceToRoom(roomID uint, deviceID string) error {
 
 func (u *roomUsecase) ListDevicesInRoom(roomID uint) ([]*domain.DeviceSummary, error) {
 	return u.roomRepo.ListDeviceSummaries(roomID)
+}
+</file>
+
+<file path="internal/core/usecase/user_usecase.go">
+package usecase
+
+import (
+	"errors"
+
+	"project-home-iot/internal/core/domain"
+)
+
+type UserUsecase interface {
+	CreateUser(user *domain.User) error
+	ListUsers() ([]*domain.User, error)
+	GetUser(id uint) (*domain.User, error)
+	DeleteUser(id uint) error
+	UploadProfile(id uint, filePath string) error
+}
+
+type userUsecase struct {
+	userRepo domain.UserRepository
+}
+
+func NewUserUsecase(ur domain.UserRepository) UserUsecase {
+	return &userUsecase{userRepo: ur}
+}
+
+func (u *userUsecase) CreateUser(user *domain.User) error {
+
+	if user.Role == "" {
+		user.Role = domain.RoleUser
+	}
+
+	if !user.Role.IsValid() {
+		return errors.New("invalid role")
+	}
+
+	return u.userRepo.Create(user)
+}
+
+
+func (u *userUsecase) ListUsers() ([]*domain.User, error) {
+	return u.userRepo.FindAll()
+}
+
+func (u *userUsecase) GetUser(id uint) (*domain.User, error) {
+	return u.userRepo.FindByID(id)
+}
+
+func (u *userUsecase) DeleteUser(id uint) error {
+	return u.userRepo.Delete(id)
+}
+
+
+func (u *userUsecase) UploadProfile(id uint, filePath string) error {
+	return u.userRepo.UpdateProfilePath(id, filePath)
 }
 </file>
 
@@ -916,182 +784,89 @@ func ModelToDomainCapability(m *Capability) *domain.Capability {
 }
 </file>
 
-<file path="internal/infrastructure/http/user_handler.go">
-package http
+<file path="internal/infrastructure/gorm/user_repo.go">
+package gorm
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-
-	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/domain"
-	"project-home-iot/internal/core/usecase"
+	"gorm.io/gorm"
 )
 
-type UserHandler struct {
-	usecase usecase.UserUsecase
+type User struct {
+	Email       string `gorm:"primaryKey;autoIncrement:false"`
+	Name string
+	Role        string
 }
 
-func NewUserHandler(u usecase.UserUsecase) *UserHandler {
-	return &UserHandler{usecase: u}
+type UserRepository struct {
+	db *gorm.DB
 }
 
-func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
-	users, err := h.usecase.ListUsers()
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	var response []UserResponse
-	for _, u := range users {
-		response = append(response, ToUserResponse(u))
-	}
-
-	return c.JSON(fiber.Map{"data": response})
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	var req CreateUserRequest
-
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+func (r *UserRepository) Create(user *domain.User) error {
+	model := DomainToUserModel(user)
+	if err := r.db.Create(model).Error; err != nil {
+		return err
 	}
-
-	user := &domain.User{
-		Username:    req.Username,
-		Name:        req.Name,
-		Password:    req.Password,
-		Email:       req.Email,
-		ProfilePath: req.ProfilePath,
-	}
-
-	if err := h.usecase.CreateUser(user); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "เพิ่มผู้ใช้งานเรียบร้อยแล้ว",
-	})
+	user.Email = model.Email
+	return nil
 }
 
-func (h *UserHandler) GetUser(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
+func (r *UserRepository) FindAll() ([]*domain.User, error) {
+	var models []User
+	if err := r.db.Find(&models).Error; err != nil {
+		return nil, err
 	}
 
-	user, err := h.usecase.GetUser(uint(id))
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	var result []*domain.User
+	for _, m := range models {
+		result = append(result, ModelToDomainUser(&m))
 	}
-
-	return c.JSON(ToUserResponse(user))
+	return result, nil
 }
 
-func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
+func (r *UserRepository) FindByID(id uint) (*domain.User, error) {
+	var model User
+	if err := r.db.First(&model, id).Error; err != nil {
+		return nil, err
 	}
-
-	if err := h.usecase.DeleteUser(uint(id)); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "ลบบัญชีผู้ใช้งานเรียบร้อยแล้ว",
-	})
+	return ModelToDomainUser(&model), nil
 }
 
-func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
-	}
-
-	var req ChangePasswordRequest
-
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	if err := h.usecase.ChangePassword(uint(id), req.OldPassword, req.NewPassword); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
-	})
+func (r *UserRepository) Delete(id uint) error {
+	return r.db.Delete(&User{}, id).Error
 }
 
-func (h *UserHandler) UploadProfile(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
-	}
-
-	file, err := c.FormFile("profile")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "profile file is required")
-	}
-
-	uploadDir := "./uploads"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		if err := os.Mkdir(uploadDir, os.ModePerm); err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-		}
-	}
-
-	filename := fmt.Sprintf("user_%d_%s", id, file.Filename)
-	savePath := filepath.Join(uploadDir, filename)
-
-	if err := c.SaveFile(file, savePath); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	if err := h.usecase.UploadProfile(uint(id), savePath); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(fiber.Map{
-		"message":      "อัปโหลดรูปโปรไฟล์เรียบร้อยแล้ว",
-		"profile_path": savePath,
-	})
+func (r *UserRepository) UpdatePassword(id uint, hashedPassword string) error {
+	return r.db.Model(&User{}).
+		Where("id = ?", id).
+		Update("password", hashedPassword).Error
 }
 
-func ToUserResponse(u *domain.User) UserResponse {
-	return UserResponse{
-		UserID:      u.ID,
-		Username:    u.Username,
-		Name:        u.Name,
+func (r *UserRepository) UpdateProfilePath(id uint, path string) error {
+	return r.db.Model(&User{}).
+		Where("id = ?", id).
+		Update("profile_path", path).Error
+}
+
+
+func DomainToUserModel(u *domain.User) *User {
+	return &User{
 		Email:       u.Email,
-		ProfilePath: u.ProfilePath,
+		Name: u.Name,
 		Role:        string(u.Role),
 	}
 }
 
-type CreateUserRequest struct {
-	Username    string `json:"username"`
-	Name        string `json:"name"`
-	Password    string `json:"password"`
-	Email       string `json:"email"`
-	ProfilePath string `json:"profile_path"`
-}
-
-type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
-}
-
-type UserResponse struct {
-	UserID      uint   `json:"user_id"`
-	Username    string `json:"username"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	ProfilePath string `json:"profile_path"`
-	Role        string `json:"role"`
+func ModelToDomainUser(m *User) *domain.User {
+	return &domain.User{
+		Email:       m.Email,
+		Name: m.Name,
+		Role:        domain.UserRole(m.Role),
+	}
 }
 </file>
 
@@ -1176,6 +951,353 @@ type CapabilityRepository interface {
 }
 </file>
 
+<file path="internal/core/domain/room.go">
+package domain
+
+type Room struct {
+	ID      uint
+	Name    string
+	Devices []DeviceSummary
+}
+
+type RoomRepository interface {
+	Create(room *Room) error
+	FindAll() ([]*Room, error)
+	FindByID(id uint) (*Room, error)
+	Update(room *Room) error
+	Delete(id uint) error
+
+	AddDevice(roomID uint, deviceID string) error
+	ListDeviceSummaries(roomID uint) ([]*DeviceSummary, error)
+}
+</file>
+
+<file path="internal/core/domain/user.go">
+package domain
+
+type User struct {
+	Email       string
+	Name string
+	Role        UserRole
+}
+
+type UserRole string
+
+const (
+	RoleAdmin UserRole = "ADMIN"
+	RoleUser  UserRole = "USER"
+)
+
+func (r UserRole) IsValid() bool {
+	switch r {
+	case RoleAdmin, RoleUser:
+		return true
+	default:
+		return false
+	}
+}
+
+type UserRepository interface {
+	Create(user *User) error
+	FindAll() ([]*User, error)
+	FindByID(id uint) (*User, error)
+	Delete(id uint) error
+
+	UpdatePassword(id uint, hashedPassword string) error
+	UpdateProfilePath(id uint, path string) error
+}
+</file>
+
+<file path="internal/core/usecase/record_log_usecase.go">
+package usecase
+
+import (
+	"project-home-iot/internal/core/domain"
+)
+
+type RecordLogUsecase interface {
+	// Execute(deviceId string, capabilityId uint, eventType string, value uint) error
+	Execute(deviceId string, capabilityType string,controlType string, eventType string, value string) error
+}
+
+type recordLogUsecase struct {
+	widgetRepo domain.WidgetRepository
+	capabilityRepo domain.CapabilityRepository
+	recorder domain.Recorder
+}
+
+func NewRecordLogUsecase(r domain.Recorder,wr domain.WidgetRepository,cr domain.CapabilityRepository) RecordLogUsecase {
+	return &recordLogUsecase{recorder: r, widgetRepo: wr,capabilityRepo: cr}
+}
+
+func (uc *recordLogUsecase) Execute(deviceId string, capabilityType string,controlType string, eventType string, value string) error {
+	capability,err := uc.capabilityRepo.FindByTypeAndControl(capabilityType, controlType)
+	if err != nil {
+		return err
+	}
+	widget := uc.widgetRepo.GetWidgetIdByDeviceAndCapability(deviceId, capability.ID)
+	logEntry := &domain.Log{
+        WidgetID:  widget.ID,
+        EventType: eventType,
+        Value:     value,
+    }
+	uc.widgetRepo.UpdateValue(widget.ID,value)
+    return uc.recorder.RecordLog(logEntry)
+	// return uc.recorder.RecordLog(widget.ID, eventType, value)
+}
+</file>
+
+<file path="internal/infrastructure/http/user_handler.go">
+package http
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+
+	"github.com/gofiber/fiber/v2"
+	"project-home-iot/internal/core/domain"
+	"project-home-iot/internal/core/usecase"
+)
+
+type UserHandler struct {
+	usecase usecase.UserUsecase
+}
+
+func NewUserHandler(u usecase.UserUsecase) *UserHandler {
+	return &UserHandler{usecase: u}
+}
+
+func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
+	users, err := h.usecase.ListUsers()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	var response []UserResponse
+	for _, u := range users {
+		response = append(response, ToUserResponse(u))
+	}
+
+	return c.JSON(fiber.Map{"data": response})
+}
+
+func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
+	var req CreateUserRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	user := &domain.User{
+		Email:       req.Email,
+		Role: domain.RoleUser,
+	}
+
+	if err := h.usecase.CreateUser(user); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "เพิ่มผู้ใช้งานเรียบร้อยแล้ว",
+	})
+}
+
+func (h *UserHandler) GetUser(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
+	}
+
+	user, err := h.usecase.GetUser(uint(id))
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+
+	return c.JSON(ToUserResponse(user))
+}
+
+func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
+	}
+
+	if err := h.usecase.DeleteUser(uint(id)); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "ลบบัญชีผู้ใช้งานเรียบร้อยแล้ว",
+	})
+}
+
+
+func (h *UserHandler) UploadProfile(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
+	}
+
+	file, err := c.FormFile("profile")
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "profile file is required")
+	}
+
+	uploadDir := "./uploads"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		if err := os.Mkdir(uploadDir, os.ModePerm); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+	}
+
+	filename := fmt.Sprintf("user_%d_%s", id, file.Filename)
+	savePath := filepath.Join(uploadDir, filename)
+
+	if err := c.SaveFile(file, savePath); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	if err := h.usecase.UploadProfile(uint(id), savePath); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"message":      "อัปโหลดรูปโปรไฟล์เรียบร้อยแล้ว",
+		"profile_path": savePath,
+	})
+}
+
+func ToUserResponse(u *domain.User) UserResponse {
+	return UserResponse{
+		Email:       u.Email,
+		Role:        string(u.Role),
+	}
+}
+
+type CreateUserRequest struct {
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	Password    string `json:"password"`
+	Email       string `json:"email"`
+	ProfilePath string `json:"profile_path"`
+}
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
+type UserResponse struct {
+	UserID      uint   `json:"user_id"`
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	ProfilePath string `json:"profile_path"`
+	Role        string `json:"role"`
+}
+</file>
+
+<file path="internal/infrastructure/mqtt/pair_commander.go">
+package mqtt
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"project-home-iot/internal/core/domain"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+)
+
+type MQTTPairCommander struct {
+	client mqtt.Client
+}
+
+func NewMQTTPairCommander(client mqtt.Client) domain.PairCommander {
+	return &MQTTPairCommander{client: client}
+}
+
+func (m *MQTTPairCommander) RequestPair(deviceID string, deviceKey string) error {
+	requestTopic := fmt.Sprintf("devices/%s/pair/request", deviceID)
+	replyTopic := fmt.Sprintf("devices/%s/pair/response", deviceID)
+	
+	ch := make(chan string, 1)
+
+	tokenSub := m.client.Subscribe(replyTopic, 1, func(c mqtt.Client, msg mqtt.Message) {
+		var resp struct {
+			Status string `json:"status"`
+		}
+
+		if err := json.Unmarshal(msg.Payload(), &resp); err == nil {
+			ch <- resp.Status
+		}
+
+		c.Unsubscribe(replyTopic)
+	})
+
+	if tokenSub.Wait() && tokenSub.Error() != nil {
+		return tokenSub.Error()
+	}
+
+	payload := map[string]interface{}{
+		"device_key": deviceKey,
+	}
+
+	data, _ := json.Marshal(payload)
+
+	tokenPub := m.client.Publish(requestTopic, 1, false, data)
+	if tokenPub.Wait() && tokenPub.Error() != nil {
+		m.client.Unsubscribe(replyTopic)
+		return tokenPub.Error()
+	}
+
+	select {
+	case status := <-ch:
+		if status != "success" {
+			return fmt.Errorf("pair failed")
+		}
+		return nil
+
+	case <-time.After(30 * time.Second):
+		m.client.Unsubscribe(replyTopic)
+		return fmt.Errorf("pair timeout")
+	}
+}
+
+func (m *MQTTPairCommander) Subscribe(deviceID string) error {
+	topic := fmt.Sprintf("devices/%s/pair/response", deviceID)
+	token := m.client.Subscribe(topic, 1, nil)
+	token.Wait()
+	return token.Error()
+}
+</file>
+
+<file path="internal/infrastructure/mqtt/sensor_subscriber.go">
+package mqtt
+
+import mqtt "github.com/eclipse/paho.mqtt.golang"
+
+type SensorSubscriber struct {
+	client mqtt.Client
+}
+
+func NewSensorSubscriber(client mqtt.Client) *SensorSubscriber {
+	return &SensorSubscriber{client: client}
+}
+
+func (s *SensorSubscriber) SubscribeSensor(handler mqtt.MessageHandler) error {
+	token := s.client.Subscribe(
+		"devices/+/sensor",
+		1,
+		handler,
+	)
+	token.Wait()
+	return token.Error()
+}
+</file>
+
 <file path="internal/infrastructure/gorm/room_repo.go">
 package gorm
 
@@ -1214,13 +1336,16 @@ func (r *RoomRepository) Create(room *domain.Room) error {
 
 func (r *RoomRepository) FindAll() ([]*domain.Room, error) {
 	var models []Room
-	if err := r.db.Find(&models).Error; err != nil {
+
+	if err := r.db.
+		Preload("Devices").
+		Find(&models).Error; err != nil {
 		return nil, err
 	}
 
 	var rooms []*domain.Room
 	for _, m := range models {
-		rooms = append(rooms, ModelToDomainRoom(&m))
+		rooms = append(rooms, ModelToDomainRoomWithDevices(&m))
 	}
 
 	return rooms, nil
@@ -1228,13 +1353,15 @@ func (r *RoomRepository) FindAll() ([]*domain.Room, error) {
 
 func (r *RoomRepository) FindByID(id uint) (*domain.Room, error) {
 	var model Room
-	if err := r.db.First(&model, id).Error; err != nil {
+
+	if err := r.db.
+		Preload("Devices").
+		First(&model, id).Error; err != nil {
 		return nil, err
 	}
 
-	return ModelToDomainRoom(&model), nil
+	return ModelToDomainRoomWithDevices(&model), nil
 }
-
 func (r *RoomRepository) Update(room *domain.Room) error {
 	return r.db.Model(&Room{}).
 		Where("id = ?", room.ID).
@@ -1286,6 +1413,23 @@ func ModelToDomainRoom(m *Room) *domain.Room {
 		ID:   m.ID,
 		Name: m.Name,
 	}
+}
+
+func ModelToDomainRoomWithDevices(m *Room) *domain.Room {
+	room := &domain.Room{
+		ID:   m.ID,
+		Name: m.Name,
+	}
+
+	for _, d := range m.Devices {
+		room.Devices = append(room.Devices, domain.DeviceSummary{
+			DeviceID:   d.DeviceID,
+			DeviceName: d.DeviceName,
+			DeviceType: d.DeviceType,
+		})
+	}
+
+	return room
 }
 </file>
 
@@ -1413,9 +1557,20 @@ func (h *RoomHandler) ListDevices(c *fiber.Ctx) error {
 }
 
 func ToRoomResponse(r *domain.Room) RoomResponse {
+	var devices []DeviceResponse
+
+	for _, d := range r.Devices {
+		devices = append(devices, DeviceResponse{
+			DeviceID:   d.DeviceID,
+			DeviceName: d.DeviceName,
+			DeviceType: d.DeviceType,
+		})
+	}
+
 	return RoomResponse{
 		RoomID:   r.ID,
 		RoomName: r.Name,
+		Devices:  devices,
 	}
 }
 
@@ -1433,400 +1588,9 @@ type AddDeviceToRoomRequest struct {
 }
 
 type RoomResponse struct {
-    RoomID   uint   `json:"room_id"`
-    RoomName string `json:"room_name"`
-}
-</file>
-
-<file path="internal/infrastructure/mqtt/pair_commander.go">
-package mqtt
-
-import (
-	"encoding/json"
-	"fmt"
-	"time"
-
-	"project-home-iot/internal/core/domain"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
-)
-
-type MQTTPairCommander struct {
-	client mqtt.Client
-}
-
-func NewMQTTPairCommander(client mqtt.Client) domain.PairCommander {
-	return &MQTTPairCommander{client: client}
-}
-
-func (m *MQTTPairCommander) RequestPair(deviceID string, deviceKey string) error {
-	requestTopic := fmt.Sprintf("devices/%s/pair/request", deviceID)
-	replyTopic := fmt.Sprintf("devices/%s/pair/response", deviceID)
-	
-	ch := make(chan string, 1)
-
-	tokenSub := m.client.Subscribe(replyTopic, 1, func(c mqtt.Client, msg mqtt.Message) {
-		var resp struct {
-			Status string `json:"status"`
-		}
-
-		if err := json.Unmarshal(msg.Payload(), &resp); err == nil {
-			ch <- resp.Status
-		}
-
-		c.Unsubscribe(replyTopic)
-	})
-
-	if tokenSub.Wait() && tokenSub.Error() != nil {
-		return tokenSub.Error()
-	}
-
-	payload := map[string]interface{}{
-		"device_key": deviceKey,
-	}
-
-	data, _ := json.Marshal(payload)
-
-	tokenPub := m.client.Publish(requestTopic, 1, false, data)
-	if tokenPub.Wait() && tokenPub.Error() != nil {
-		m.client.Unsubscribe(replyTopic)
-		return tokenPub.Error()
-	}
-
-	select {
-	case status := <-ch:
-		if status != "success" {
-			return fmt.Errorf("pair failed")
-		}
-		return nil
-
-	case <-time.After(30 * time.Second):
-		m.client.Unsubscribe(replyTopic)
-		return fmt.Errorf("pair timeout")
-	}
-}
-
-func (m *MQTTPairCommander) Subscribe(deviceID string) error {
-	topic := fmt.Sprintf("devices/%s/pair/response", deviceID)
-	token := m.client.Subscribe(topic, 1, nil)
-	token.Wait()
-	return token.Error()
-}
-</file>
-
-<file path="internal/infrastructure/mqtt/sensor_subscriber.go">
-package mqtt
-
-import mqtt "github.com/eclipse/paho.mqtt.golang"
-
-type SensorSubscriber struct {
-	client mqtt.Client
-}
-
-func NewSensorSubscriber(client mqtt.Client) *SensorSubscriber {
-	return &SensorSubscriber{client: client}
-}
-
-func (s *SensorSubscriber) SubscribeSensor(handler mqtt.MessageHandler) error {
-	token := s.client.Subscribe(
-		"devices/+/sensor",
-		1,
-		handler,
-	)
-	token.Wait()
-	return token.Error()
-}
-</file>
-
-<file path="internal/infrastructure/gorm/recorder_repo.go">
-package gorm
-
-import (
-	"project-home-iot/internal/core/domain"
-
-	"gorm.io/gorm"
-
-	// "project-home-iot/internal/infrastructure/gorm/models"
-	// "project-home-iot/internal/infrastructure/mappers"
-)
-
-type Log struct {
-	gorm.Model
-	Value     string
-	EventType string
-
-	WidgetID  uint       `gorm:"not null"`
-	Widget    Widget `gorm:"foreignKey:WidgetID;references:ID"`
-}
-
-type RecorderRepository struct {
-	db *gorm.DB
-}
-
-func NewRecorderRepository(db *gorm.DB) *RecorderRepository {
-	return &RecorderRepository{db: db}
-}
-
-// func (r *RecorderRepository) DataReceive(log *domain.Log) error {
-// 	model := mappers.LogDomainToModel(log)
-
-// 	if err := r.db.Create(model).Error; err != nil {
-// 		return err
-// 	}
-
-// 	// sync ID กลับไป domain (optional แต่ดี)
-// 	log.ID = model.ID
-// 	return nil
-// }
-
-func (r *RecorderRepository) RecordLog(log *domain.Log) error {
-
-	// log := &domain.Log{
-	// 	WidgetID:  widgetId,
-	// 	EventType: eventType,
-	// 	Value:     value,
-	// 	ActorType: "system", // หรือ inject จาก context
-	// }
-
-	// return r.DataReceive(log)
-	model := LogDomainToModel(log)
-    if err := r.db.Create(model).Error; err != nil {
-        return err
-    }
-
-    log.ID = model.ID
-    return nil
-}
-
-func LogDomainToModel(d *domain.Log) *Log {
-	return &Log{
-		WidgetID:  d.WidgetID,
-		Value:     d.Value,
-		EventType: d.EventType,
-	}
-}
-
-func LogModelToDomain(m *Log) *domain.Log {
-	return &domain.Log{
-		ID:        m.ID,
-		WidgetID:  m.WidgetID,
-		Value:     m.Value,
-		EventType: m.EventType,
-	}
-}
-</file>
-
-<file path="internal/infrastructure/gorm/device_repo.go">
-package gorm
-
-import (
-	"project-home-iot/internal/core/domain"
-	// "project-home-iot/internal/infrastructure/gorm/models"
-	"gorm.io/gorm"
-	"time"
-)
-
-type Device struct {
-	DeviceID string `gorm:"primaryKey;autoIncrement:false"`
-
-	DeviceName string
-	DeviceType string
-
-	RoomID *uint
-	Room   *Room `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	LastHeartbeat time.Time
-
-	Widgets []Widget `gorm:"foreignKey:DeviceID"`
-}
-
-type DeviceRepository struct {
-	db *gorm.DB
-}
-
-func NewDeviceRepository(db *gorm.DB) *DeviceRepository {
-	return &DeviceRepository{db: db}
-}
-
-func (r *DeviceRepository) CreateDevice(device *domain.Device) error {
-	model := DomainToDeviceModel(device)
-
-	return r.db.Create(model).Error
-}
-
-func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error) {
-	var model Device
-
-	err := r.db.
-		Joins("join widgets on widgets.device_id = devices.device_id").
-		Where("widgets.id = ?", widgetID).
-		First(&model).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return ModelToDomainDevice(&model), nil
-}
-
-
-func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
-	var result []*domain.DeviceSummary
-
-	err := r.db.
-		Table("devices").
-		Select("device_id,last_heartbeat, device_name, device_type").
-		Scan(&result).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (r *DeviceRepository) GetUnpairDevice() ([]*domain.DeviceSummary, error) {
-	var result []*domain.DeviceSummary
-
-	err := r.db.
-		Model(&Device{}).
-		Select("devices.*").
-		Joins("LEFT JOIN widgets ON widgets.device_id = devices.device_id").
-		Where("widgets.device_id IS NULL").
-		Scan(&result).Error
-
-	return result, err
-}
-
-
-
-
-func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
-	var model Device
-
-	if err := r.db.
-		Where("device_id = ?", id).
-		First(&model).Error; err != nil {
-		return nil, err
-	}
-
-	return ModelToDomainDevice(&model), nil
-}
-
-func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, error) {
-	var result domain.DeviceSummary
-
-	err := r.db.
-		Table("devices").
-		Select("device_id, last_heartbeat, device_name, device_type").
-		Where("device_id = ?", id).
-		First(&result).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
-
-func (r *DeviceRepository) UpdateName(id string, name string) error {
-	return r.db.Model(&Device{}).
-		Where("device_id = ?", id).
-		Update("device_name", name).Error
-}
-
-func (r *DeviceRepository) Pair(id string, deviceKey string) error {
-	return r.db.Model(&Device{}).
-		Where("device_id = ?", id).
-		Update("device_key", deviceKey).Error
-}
-
-func (r *DeviceRepository) Unpair(id string) error {
-	return r.db.Model(&Device{}).
-		Where("device_id = ?", id).
-		Update("device_key", "").Error
-}
-
-func (r *DeviceRepository) UpdateHeartbeat(deviceID string) error {
-	return r.db.Model(&Device{}).
-		Where("device_id = ?", deviceID).
-		Update("last_heartbeat", gorm.Expr("NOW()")).Error
-}
-
-
-func DomainToDeviceModel(d *domain.Device) *Device {
-	return &Device{
-		DeviceID:   d.DeviceID,
-		DeviceName: d.DeviceName,
-		DeviceType: d.DeviceType,
-	}
-}
-
-func ModelToDomainDevice(m *Device) *domain.Device {
-	return &domain.Device{
-		DeviceID:         m.DeviceID,
-		DeviceName: m.DeviceName,
-		DeviceType: m.DeviceType,
-	}
-}
-</file>
-
-<file path="internal/infrastructure/mqtt/sensor_handler.go">
-package mqtt
-
-import (
-	"encoding/json"
-	"strings"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"project-home-iot/internal/core/usecase"
-)
-
-type SensorHandler struct {
-	recordLogUC usecase.RecordLogUsecase
-	deviceUC usecase.DeviceUsecase
-}
-
-func NewSensorHandler(uc usecase.RecordLogUsecase,duc usecase.DeviceUsecase) *SensorHandler {
-	return &SensorHandler{
-		recordLogUC: uc,
-		deviceUC: duc,
-	}
-}
-
-func (h *SensorHandler) HandleSensorMessage(
-	c mqtt.Client,
-	m mqtt.Message,
-) {
-	topic := m.Topic()
-	parts := strings.Split(topic, "/")
-
-	deviceID := parts[1]
-
-	var payload SensorPayload
-	if err := json.Unmarshal(m.Payload(), &payload); err != nil {
-		return
-	}
-
-	if payload.CapabilityType == "heartbeat" { 
-		_ = h.deviceUC.UpdateHeartbeat(deviceID)
-		return
-	}
-
-	_ = h.recordLogUC.Execute(
-		deviceID,
-		payload.CapabilityType,
-		payload.ControlType,
-		// payload.CapabilityID,
-		"sensor",
-		payload.Value,
-	)
-}
-
-type SensorPayload struct {
-	// CapabilityID uint `json:"capability_id"`
-	CapabilityType string `json:"capability_type"`
-	ControlType string `json:"control_type"`
-	Value string `json:"value"`
+	RoomID   uint             `json:"room_id"`
+	RoomName string           `json:"room_name"`
+	Devices  []DeviceResponse `json:"devices"`
 }
 </file>
 
@@ -1914,70 +1678,341 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 }
 </file>
 
-<file path="docker-compose.yml">
-version: '3.8'
+<file path="internal/core/usecase/device_capability_map.go">
+package usecase
 
-services:
+// ในไฟล์ usecase/device_map.go (หรือที่เก็บ Map เดิม)
 
-  mqtt-broker:
-    image: eclipse-mosquitto:latest
-    container_name: mosquitto_container
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_log:/mosquitto/log
-  postgres:
-    image: postgres:16
-    container_name: postgres
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-    restart: unless-stopped
+type CapabilityRef struct {
+    Type    string
+    Control string
+}
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PG_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PG_PASSWORD}
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-    restart: unless-stopped
+var DeviceCapabilityMap = map[string][]CapabilityRef{
+    "light": {
+        {Type: "toggle", Control: "light-switch"},
+		{Type: "mode", Control: "light-system"},
+		{Type: "sensor", Control: "light-intensity"},
+    },
+    "air": {
+        {Type: "toggle", Control: "air-power"},
+        {Type: "adjust", Control: "temperature"},
+    },
+    "fan": {
+        {Type: "toggle", Control: "fan-power"},
+        {Type: "level", Control: "fan-speed"},
+    },
+	"temperature-sensor": {
+        {Type: "sensor", Control: "temperature"},
+    },
+    "temperature_humidity": {
+        {Type: "sensor", Control: "humidity"},
+        {Type: "adjust", Control: "content"},
+        {Type: "mode", Control: "display"},
+    },
+}
+</file>
 
-  app:
-    image: golang:1.25
-    container_name: go-app
-    working_dir: /app
-    volumes:
-      - .:/app
-    command: go run ./cmd/app
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-    depends_on:
-      - postgres
-      - mqtt-broker
-    ports:
-      - "3000:3000"
-    restart: unless-stopped
+<file path="internal/infrastructure/gorm/device_repo.go">
+package gorm
 
-volumes:
-  postgres_data:
-  mosquitto_data: # เพิ่มบรรทัดนี้
-  mosquitto_log:  # เพิ่มบรรทัดนี้
+import (
+	"project-home-iot/internal/core/domain"
+	// "project-home-iot/internal/infrastructure/gorm/models"
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type Device struct {
+	DeviceID string `gorm:"primaryKey;autoIncrement:false"`
+
+	DeviceName string
+	DeviceType string
+
+	RoomID        *uint
+	Room          *Room `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	LastHeartbeat time.Time
+
+	Widgets []Widget `gorm:"foreignKey:DeviceID"`
+}
+
+type DeviceRepository struct {
+	db *gorm.DB
+}
+
+func NewDeviceRepository(db *gorm.DB) *DeviceRepository {
+	return &DeviceRepository{db: db}
+}
+
+func (r *DeviceRepository) CreateDevice(device *domain.Device) error {
+	model := DomainToDeviceModel(device)
+
+	return r.db.Create(model).Error
+}
+
+func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error) {
+	var model Device
+
+	err := r.db.
+		Joins("join widgets on widgets.device_id = devices.device_id").
+		Where("widgets.id = ?", widgetID).
+		First(&model).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ModelToDomainDevice(&model), nil
+}
+
+func (r *DeviceRepository) GetAllSummaries() ([]*domain.DeviceSummary, error) {
+	var result []*domain.DeviceSummary
+
+	err := r.db.
+		Table("devices").
+		Select("device_id,last_heartbeat, device_name, device_type").
+		Scan(&result).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (r *DeviceRepository) GetUnpairDevice() ([]*domain.DeviceSummary, error) {
+	var result []*domain.DeviceSummary
+
+	err := r.db.
+		Model(&Device{}).
+		Select("devices.*").
+		Joins("LEFT JOIN widgets ON widgets.device_id = devices.device_id").
+		Where("widgets.device_id IS NULL").
+		Scan(&result).Error
+	return result, err
+}
+
+func (r *DeviceRepository) GetPairedDevice() ([]*domain.DeviceSummary, error) {
+	var result []*domain.DeviceSummary
+
+	err := r.db.
+		Model(&Device{}).
+		Where("EXISTS (?)",
+			r.db.
+				Select("1").
+				Table("widgets").
+				Where("widgets.device_id = devices.device_id"),
+		).
+		Scan(&result).Error
+	return result, err
+}
+
+func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
+	var model Device
+
+	if err := r.db.
+		Where("device_id = ?", id).
+		First(&model).Error; err != nil {
+		return nil, err
+	}
+
+	return ModelToDomainDevice(&model), nil
+}
+
+func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, error) {
+	var result domain.DeviceSummary
+
+	err := r.db.
+		Table("devices").
+		Select("device_id, last_heartbeat, device_name, device_type").
+		Where("device_id = ?", id).
+		First(&result).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (r *DeviceRepository) UpdateName(id string, name string) error {
+	return r.db.Model(&Device{}).
+		Where("device_id = ?", id).
+		Update("device_name", name).Error
+}
+
+func (r *DeviceRepository) Pair(id string, deviceKey string) error {
+	return r.db.Model(&Device{}).
+		Where("device_id = ?", id).
+		Update("device_key", deviceKey).Error
+}
+
+func (r *DeviceRepository) Unpair(id string) error {
+	return r.db.Model(&Device{}).
+		Where("device_id = ?", id).
+		Update("room_id", nil).Error
+}
+
+func (r *DeviceRepository) UpdateHeartbeat(deviceID string) error {
+	return r.db.Model(&Device{}).
+		Where("device_id = ?", deviceID).
+		Update("last_heartbeat", gorm.Expr("NOW()")).Error
+}
+
+func DomainToDeviceModel(d *domain.Device) *Device {
+	return &Device{
+		DeviceID:   d.DeviceID,
+		DeviceName: d.DeviceName,
+		DeviceType: d.DeviceType,
+	}
+}
+
+func ModelToDomainDevice(m *Device) *domain.Device {
+	return &domain.Device{
+		DeviceID:   m.DeviceID,
+		DeviceName: m.DeviceName,
+		DeviceType: m.DeviceType,
+	}
+}
+</file>
+
+<file path="internal/infrastructure/gorm/recorder_repo.go">
+package gorm
+
+import (
+	"project-home-iot/internal/core/domain"
+
+	"gorm.io/gorm"
+
+	// "project-home-iot/internal/infrastructure/gorm/models"
+	// "project-home-iot/internal/infrastructure/mappers"
+)
+
+type Log struct {
+	gorm.Model
+	Value     string
+	EventType string
+
+	Actor string 
+	User User	`gorm:"foreignKey:Actor;references:Email"`
+
+	WidgetID  uint       `gorm:"not null"`
+	Widget    Widget `gorm:"foreignKey:WidgetID;references:ID"`
+}
+
+type RecorderRepository struct {
+	db *gorm.DB
+}
+
+func NewRecorderRepository(db *gorm.DB) *RecorderRepository {
+	return &RecorderRepository{db: db}
+}
+
+
+
+func (r *RecorderRepository) RecordLog(log *domain.Log) error {
+
+	model := LogDomainToModel(log)
+    if err := r.db.Create(model).Error; err != nil {
+        return err
+    }
+
+    log.ID = model.ID
+    return nil
+}
+
+func (r *RecorderRepository) GetLogByWidgetID(widgetID uint) ([]*domain.Log, error) {
+	var result []*domain.Log
+
+	err := r.db.
+		Model(&Log{}).
+		Select("value, event_type,actor,created_at").
+		Where("widget_id = ?", widgetID).
+		Scan(&result).Error
+
+	return result, err
+
+}
+
+func LogDomainToModel(d *domain.Log) *Log {
+	return &Log{
+		WidgetID:  d.WidgetID,
+		Value:     d.Value,
+		Actor: d.Actor,
+		EventType: d.EventType,
+	}
+}
+
+func LogModelToDomain(m *Log) *domain.Log {
+	return &domain.Log{
+		ID:        m.ID,
+		// WidgetID:  m.WidgetID,
+		Actor: m.Actor,
+		Value:     m.Value,
+		EventType: m.EventType,
+	}
+}
+</file>
+
+<file path="internal/infrastructure/mqtt/sensor_handler.go">
+package mqtt
+
+import (
+	"encoding/json"
+	"strings"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"project-home-iot/internal/core/usecase"
+)
+
+type SensorHandler struct {
+	recordLogUC usecase.RecordLogUsecase
+	deviceUC usecase.DeviceUsecase
+}
+
+func NewSensorHandler(uc usecase.RecordLogUsecase,duc usecase.DeviceUsecase) *SensorHandler {
+	return &SensorHandler{
+		recordLogUC: uc,
+		deviceUC: duc,
+	}
+}
+
+func (h *SensorHandler) HandleSensorMessage(
+	c mqtt.Client,
+	m mqtt.Message,
+) {
+	topic := m.Topic()
+	parts := strings.Split(topic, "/")
+
+	deviceID := parts[1]
+
+	var payload SensorPayload
+	if err := json.Unmarshal(m.Payload(), &payload); err != nil {
+		return
+	}
+
+	if payload.CapabilityType == "status" && payload.ControlType == "heartbeat" { 
+		_ = h.deviceUC.UpdateHeartbeat(deviceID)
+		return
+	}
+
+	_ = h.recordLogUC.Execute(
+		deviceID,
+		payload.CapabilityType,
+		payload.ControlType,
+		// payload.CapabilityID,
+		"sensor",
+		payload.Value,
+	)
+}
+
+type SensorPayload struct {
+	// CapabilityID uint `json:"capability_id"`
+	CapabilityType string `json:"capability_type"`
+	ControlType string `json:"control_type"`
+	Value string `json:"value"`
+}
 </file>
 
 <file path="internal/core/usecase/widget_usecase.go">
@@ -1993,6 +2028,7 @@ type WidgetUsecase interface {
 	ListWidgets() ([]*domain.Widget, error)
 	GetWidget(id uint) (*domain.Widget, error)
 	GetWidgetByStatus(status string) ([]*domain.Widget, error)
+	GetLogs(id uint)([]*domain.Log, error)
 	ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error)
 
 	UpdateValue(widgetID uint, value string) error
@@ -2002,10 +2038,11 @@ type WidgetUsecase interface {
 
 type widgetUsecase struct {
 	widgetRepo domain.WidgetRepository
+	recorderRepo domain.Recorder
 }
 
-func NewWidgetUsecase(wr domain.WidgetRepository) WidgetUsecase {
-	return &widgetUsecase{widgetRepo: wr}
+func NewWidgetUsecase(wr domain.WidgetRepository,rr domain.Recorder) WidgetUsecase {
+	return &widgetUsecase{widgetRepo: wr,recorderRepo: rr}
 }
 
 func (u *widgetUsecase) CreateWidget(widget *domain.Widget) error {
@@ -2032,6 +2069,10 @@ func (u *widgetUsecase) GetWidget(id uint) (*domain.Widget, error) {
 	return u.widgetRepo.FindByID(id)
 }
 
+func (u *widgetUsecase) GetLogs(id uint) ([]*domain.Log, error){
+	return u.recorderRepo.GetLogByWidgetID(id)
+}
+
 func (u *widgetUsecase) ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error) {
 	return u.widgetRepo.FindByRoomID(roomID)
 }
@@ -2049,73 +2090,15 @@ func (u *widgetUsecase) ChangeOrder(roomID uint, widgetOrders []uint) error {
 }
 </file>
 
-<file path="internal/infrastructure/http/command_handler.go">
-package http
-
-import (
-	"strconv"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-
-	"project-home-iot/internal/core/domain"
-	"project-home-iot/internal/core/usecase"
-)
-
-type CommandHandler struct {
-	commandUsecase usecase.CommandUsecase
-	widgetUsecase  usecase.WidgetUsecase
-}
-
-func NewCommandHandler(uc usecase.CommandUsecase,wc usecase.WidgetUsecase) *CommandHandler {
-	return &CommandHandler{commandUsecase: uc,widgetUsecase: wc}
-}
-
-func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
-	widgetIDParam := c.Params("widgetId")
-	widgetID, err := strconv.ParseUint(widgetIDParam, 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid widget id")
-	}
-
-	var req struct {
-		CapabilityID uint `json:"capability_id"`
-		Value        string   `json:"value"`
-	}
-
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	widget, err := h.widgetUsecase.GetWidget(uint(widgetID))
-
-	correlationID := uuid.NewString()
-
-	cmd := &domain.DeviceCommand{
-		CapabilityType: widget.Capability.CapabilityType,
-		ControlType:    widget.Capability.ControlType,
-		Value:          req.Value,
-		ReplyTopic:     "devices/"+correlationID+"/command/response",
-	}
-
-	if err := h.commandUsecase.SendCommand(cmd, uint(widgetID), correlationID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-		"message": "success",
-	})
-}
-</file>
-
 <file path="internal/infrastructure/http/device_handler.go">
 package http
 
 import (
+	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
 	"time"
+
 	"github.com/gofiber/fiber/v2"
-	"project-home-iot/internal/core/domain"
 )
 
 type DeviceHandler struct {
@@ -2127,17 +2110,29 @@ func NewDeviceHandler(u usecase.DeviceUsecase) *DeviceHandler {
 }
 
 func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
-	status := c.Query("connected")
+	// status := c.Query("connected")
 	var devices []*domain.DeviceSummary
 	var err error
-	if status == "ture" {
-		// devices, err = h.usecase.GetUnpairDevice()
-	} else if status == "false" {
-		devices, err = h.usecase.GetUnpairDevice()
-	} else {
+	connected := c.Query("connected")
+
+	if connected == "" {
 		devices, err = h.usecase.ListDevices()
+	} else {
+		isConnected := c.QueryBool("connected")
+		if isConnected {
+			devices, err = h.usecase.GetPairedDevice()
+		} else {
+			devices, err = h.usecase.GetUnpairDevice()
+		}
 	}
-	// devices, err := h.usecase.ListDevices()
+	// if status == "ture" {
+	// 	fmt.Println(status)
+	// 	devices, err = h.usecase.GetPairedDevice()
+	// } else if status == "false" {
+	// 	devices, err = h.usecase.GetUnpairDevice()
+	// } else {
+	// 	devices, err = h.usecase.ListDevices()
+	// }
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -2149,7 +2144,6 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"data": response})
 }
-
 
 func (h *DeviceHandler) GetDevice(c *fiber.Ctx) error {
 	id := c.Params("device_id")
@@ -2219,142 +2213,19 @@ type PairDeviceRequest struct {
 }
 
 type DeviceResponse struct {
-	DeviceID         string   `json:"device_id"`
-	DeviceLastHeartbeat time.Time   `json:"device_last_heartbeat"`
-	DeviceName string `json:"device_name"`
-	DeviceType string `json:"device_type"`
+	DeviceID            string    `json:"device_id"`
+	DeviceLastHeartbeat time.Time `json:"device_last_heartbeat"`
+	DeviceName          string    `json:"device_name"`
+	DeviceType          string    `json:"device_type"`
 }
 
 func ToDeviceResponse(d *domain.DeviceSummary) DeviceResponse {
 	return DeviceResponse{
-		DeviceID:         d.DeviceID,
+		DeviceID:            d.DeviceID,
 		DeviceLastHeartbeat: d.LastHeartbeat,
-		DeviceName: d.DeviceName,
-		DeviceType: d.DeviceType,
+		DeviceName:          d.DeviceName,
+		DeviceType:          d.DeviceType,
 	}
-}
-</file>
-
-<file path="cmd/app/router.go">
-package main
-
-import (
-	"project-home-iot/internal/middleware"
-	"github.com/gofiber/fiber/v2"
-)
-
-func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
-	})
-
-	api := app.Group("/api")
-
-	// authen
-	authGroup := api.Group("/auth")
-	authGroup.Post("/login", handlers.Auth.Login)
-	authGroup.Post("/register", handlers.Auth.Register)
-
-	secretGroup := api.Group("/secret", middleware.JWTMiddleware())
-	secretGroup.Get("/data", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"secret_data": "นี่คือข้อมูลลับที่ได้รับการป้องกันด้วย JWT",
-		})
-	})
-
-	// device
-	deviceGroup := api.Group("/devices")
-	deviceGroup.Get("/", handlers.Device.ListDevices)
-	deviceGroup.Get("/:device_id", handlers.Device.GetDevice)
-	deviceGroup.Put("/:device_id", handlers.Device.UpdateDevice)
-	deviceGroup.Post("/:device_id/pair", handlers.Device.PairDevice)
-	deviceGroup.Post("/:device_id/unpair", handlers.Device.UnpairDevice)
-
-	// room
-	roomGroup := api.Group("/rooms")
-	roomGroup.Get("/", handlers.Room.ListRooms)
-	roomGroup.Post("/", handlers.Room.CreateRoom)
-	roomGroup.Get("/:room_id", handlers.Room.GetRoom)
-	roomGroup.Put("/:room_id", handlers.Room.UpdateRoom)
-	roomGroup.Delete("/:room_id", handlers.Room.DeleteRoom)
-
-	roomGroup.Post("/:room_id/devices", handlers.Room.AddDevice)
-	roomGroup.Get("/:room_id/devices", handlers.Room.ListDevices)
-	roomGroup.Patch("/:room_id/widgets/order", handlers.Widget.ChangeOrder)
-
-	roomGroup.Get("/:room_id/widgets", handlers.Widget.ListByRoom)
-
-	// widget
-	widgetGroup := api.Group("/widgets")
-
-	widgetGroup.Get("/", handlers.Widget.ListWidgets)
-	// widgetGroup.Get("/", handlers.Widget.GetWidgetByStatus)
-	widgetGroup.Get("/:widget_id", handlers.Widget.GetWidget)
-	widgetGroup.Put("/:widget_id", handlers.Widget.UpdateWidget)
-	widgetGroup.Patch("/:widget_id/status", handlers.Widget.ChangeStatus)
-	widgetGroup.Delete("/:widget_id", handlers.Widget.DeleteWidget)
-
-	widgetGroup.Post("/", handlers.Widget.CreateWidget)
-	widgetGroup.Post("/:widgetId/command", handlers.Command.SendCommand)
-
-	// user
-	userGroup := api.Group("/users")
-
-	userGroup.Get("/", handlers.User.ListUsers)
-	userGroup.Post("/", handlers.User.CreateUser)
-	userGroup.Get("/:user_id", handlers.User.GetUser)
-	userGroup.Delete("/:user_id", handlers.User.DeleteUser)
-	userGroup.Post("/:user_id/change-password", handlers.User.ChangePassword)
-	userGroup.Post("/:user_id/upload-profile", handlers.User.UploadProfile)
-}
-</file>
-
-<file path="internal/core/domain/widget.go">
-package domain
-
-type Widget struct {
-	ID uint
-
-	WidgetOrder  uint
-	WidgetStatus string
-	Value        string
-
-	DeviceID     string
-	CapabilityID uint
-
-	Device     *Device
-	Capability *Capability
-}
-
-type Log struct {
-	ID        uint
-	WidgetID  uint
-	ActorType string
-	Value     string
-	EventType string
-}
-
-type WidgetRepository interface {
-	GetWidgetIdByDeviceAndCapability(deviceId string, capabilityId uint) *Widget
-	CreateWidget(widget *Widget) error
-	Update(widget *Widget) error
-	Delete(id uint) error
-
-	FindAll() ([]*Widget, error)
-	FindByID(id uint) (*Widget, error)
-	FindByRoomID(roomID uint) ([]*Widget, error)
-	GetWidgetByStatus(status string) ([]*Widget, error)
-
-	UpdateValue(widgetID uint, value string) error
-	UpdateStatus(id uint, status string) error
-	ChangeOrder(roomID uint, widgetOrders []uint) error
-
-}
-
-type Recorder interface {
-	// DataReceive(log *Log) error
-	// RecordLog(widgetId uint,eventType string,value uint) error
-	RecordLog(log *Log) error
 }
 </file>
 
@@ -2366,7 +2237,7 @@ import (
 )
 
 type CommandUsecase interface {
-	SendCommand(cmd *domain.DeviceCommand, widgetID uint, correlationID string) error
+	SendCommand(cmd *domain.DeviceCommand,userEmail string, widgetID uint, correlationID string) error
 }
 
 type commandUsecase struct {
@@ -2385,7 +2256,7 @@ func NewCommandUsecase(dr domain.DeviceRepository, wr domain.WidgetRepository, d
 	}
 }
 
-func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand, widgetID uint, correlationID string) error {
+func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand,userEmail string, widgetID uint, correlationID string) error {
 	device, err := u.deviceRepo.FindByWidgetID(widgetID)
 	if err != nil {
 		return err
@@ -2402,6 +2273,7 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand, widgetID uint, c
 	err = u.recorder.RecordLog(&domain.Log{
 		WidgetID:  widgetID,
 		EventType: "command",
+		Actor: userEmail,
 		Value:     cmd.Value,
 	})
 	if err != nil {
@@ -2409,6 +2281,65 @@ func (u *commandUsecase) SendCommand(cmd *domain.DeviceCommand, widgetID uint, c
 	}
 
 	return u.widgetRepository.UpdateValue(widgetID, cmd.Value)
+}
+</file>
+
+<file path="internal/infrastructure/http/command_handler.go">
+package http
+
+import (
+	"strconv"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+
+	"project-home-iot/internal/core/domain"
+	"project-home-iot/internal/core/usecase"
+)
+
+type CommandHandler struct {
+	commandUsecase usecase.CommandUsecase
+	widgetUsecase  usecase.WidgetUsecase
+}
+
+func NewCommandHandler(uc usecase.CommandUsecase,wc usecase.WidgetUsecase) *CommandHandler {
+	return &CommandHandler{commandUsecase: uc,widgetUsecase: wc}
+}
+
+func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
+	widgetIDParam := c.Params("widgetId")
+	widgetID, err := strconv.ParseUint(widgetIDParam, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid widget id")
+	}
+
+	var req struct {
+		Actor string `json:"actor"`
+		Value        string   `json:"value"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	widget, err := h.widgetUsecase.GetWidget(uint(widgetID))
+
+	correlationID := uuid.NewString()
+
+	cmd := &domain.DeviceCommand{
+		CapabilityType: widget.Capability.CapabilityType,
+		ControlType:    widget.Capability.ControlType,
+		Value:          req.Value,
+		ReplyTopic:     "devices/"+correlationID+"/command/response",
+	}
+
+	if err := h.commandUsecase.SendCommand(cmd,req.Actor, uint(widgetID), correlationID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"message": "success",
+	})
 }
 </file>
 
@@ -2468,6 +2399,25 @@ func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(ToWidgetResponse(w))
+}
+
+func (h *WidgetHandler) GetLogs(c *fiber.Ctx) error {
+	id, err := strconv.ParseUint(c.Params("widget_id"), 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	logs,err := h.usecase.GetLogs(uint(id))
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	
+	var response []LogResponse
+	for _, l := range logs {
+		response = append(response, ToLogResponse(l))
+	}
+
+	return c.JSON(fiber.Map{"data": response})
 }
 
 
@@ -2606,6 +2556,17 @@ func (h *WidgetHandler) DeleteWidget(c *fiber.Ctx) error {
 	})
 }
 
+func ToLogResponse(l *domain.Log) LogResponse {
+	response := LogResponse{
+		Value: l.Value,
+		EventType: l.EventType,
+		Actor: l.Actor,
+		CreatedAt: l.CreatedAt,
+		
+	}
+	return response
+}
+
 func ToWidgetResponse(w *domain.Widget) WidgetResponse {
 
 	response := WidgetResponse{
@@ -2633,6 +2594,14 @@ func ToWidgetResponse(w *domain.Widget) WidgetResponse {
 	}
 
 	return response
+}
+
+type LogResponse struct {
+	Value string `json:"value"`
+	EventType string `json:"event_type"`
+	Actor string `json:"actor"`
+	// WidgetID uint `json:"widget_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type WidgetResponse struct {
@@ -2693,7 +2662,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	deviceCommander := mqtt2.NewMQTTDeviceCommander(client)
 	recorderRepository := gorm2.NewRecorderRepository(db)
 	commandUsecase := usecase.NewCommandUsecase(deviceRepository, widgetRepository, deviceCommander, recorderRepository)
-	widgetUsecase := usecase.NewWidgetUsecase(widgetRepository)
+	widgetUsecase := usecase.NewWidgetUsecase(widgetRepository, recorderRepository)
 	commandHandler := http.NewCommandHandler(commandUsecase, widgetUsecase)
 	roomRepository := gorm2.NewRoomRepository(db)
 	roomUsecase := usecase.NewRoomUsecase(roomRepository)
@@ -2735,82 +2704,140 @@ type AppHandlers struct {
 }
 </file>
 
-<file path="internal/core/domain/device.go">
+<file path="docker-compose.yml">
+version: '3.8'
+
+services:
+
+  mqtt-broker:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto_container
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PG_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  app:
+    image: golang:1.25
+    container_name: go-app
+    working_dir: /app
+    volumes:
+      - .:/app
+      - go_mod_cache:/go/pkg/mod   # ✅ cache go modules
+      - go_build_cache:/root/.cache/go-build  # ✅ cache build
+    command: go run ./cmd/app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres
+      - mqtt-broker
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+
+volumes:
+  postgres_data:
+  mosquitto_data:
+  mosquitto_log:
+  go_mod_cache:      
+  go_build_cache:
+</file>
+
+<file path="internal/core/domain/widget.go">
 package domain
 
-import (
-	"fmt"
-	"time"
-)
+import "time"
 
-type Device struct {
-	DeviceID string
+type Widget struct {
+	ID uint
 
-	DeviceName string
-	DeviceType string
-	LastHeartbeat time.Time
-	Widgets []Widget
+	WidgetOrder  uint
+	WidgetStatus string
+	Value        string
+
+	DeviceID     string
+	CapabilityID uint
+
+	Device     *Device
+	Capability *Capability
 }
 
-type DeviceSummary struct {
-	DeviceID   string
-	LastHeartbeat time.Time
-	DeviceName string
-	DeviceType string
+type Log struct {
+	ID        uint
+	WidgetID  uint
+	Actor     string
+	Value     string
+	EventType string
+	CreatedAt  time.Time
 }
 
-type DeviceCommand struct {
-	CapabilityType        string
-	ControlType string
-	Value          string
-	ReplyTopic     string
+type WidgetRepository interface {
+	GetWidgetIdByDeviceAndCapability(deviceId string, capabilityId uint) *Widget
+	CreateWidget(widget *Widget) error
+	Update(widget *Widget) error
+	Delete(id uint) error
+
+	D
+
+	FindAll() ([]*Widget, error)
+	FindByID(id uint) (*Widget, error)
+	FindByRoomID(roomID uint) ([]*Widget, error)
+	GetWidgetByStatus(status string) ([]*Widget, error)
+
+	UpdateValue(widgetID uint, value string) error
+	UpdateStatus(id uint, status string) error
+	ChangeOrder(roomID uint, widgetOrders []uint) error
 }
 
-type CommandResponse struct {
-	Status        string
-}
-
-func (d *Device) Validate() error {
-	if d.DeviceID == "" {
-		return fmt.Errorf("device id is required")
-	}
-	if d.DeviceName == "" {
-		return fmt.Errorf("device name is required")
-	}
-	if d.DeviceType == "" {
-		return fmt.Errorf("device type is required")
-	}
-	// if d.Topic == "" {
-	// 	return fmt.Errorf("topic is required")
-	// }
-	return nil
-}
-
-
-
-type DeviceRepository interface {
-	
-	CreateDevice(device *Device) error
-	FindByWidgetID(widgetID uint) (*Device, error)
-
-	GetAllSummaries() ([]*DeviceSummary, error)
-	GetSummaryByID(deviceID string) (*DeviceSummary, error)
-	GetUnpairDevice() ([]*DeviceSummary ,error)
-
-	GetByID(deviceID string) (*Device, error)
-	UpdateHeartbeat(deviceID string) error
-	UpdateName(deviceID string, name string) error
-	Pair(deviceID string, deviceKey string) error
-	Unpair(deviceID string) error
-}
-
-type PairCommander interface {
-	RequestPair(deviceID string, deviceKey string) error
-	Subscribe(deviceID string) error
-}
-
-type DeviceCommander interface {
-	RequestCommand(deviceId string, cmd *DeviceCommand,correlationID string) (*CommandResponse, error)
+type Recorder interface {
+	// DataReceive(log *Log) error
+	// RecordLog(widgetId uint,eventType string,value uint) error
+	RecordLog(log *Log) error
+	GetLogByWidgetID(widgetID uint) ([]*Log, error)
 }
 </file>
 
@@ -2902,12 +2929,165 @@ type CommandResponse struct {
 }
 </file>
 
+<file path="cmd/app/router.go">
+package main
+
+import (
+	"project-home-iot/internal/middleware"
+	"github.com/gofiber/fiber/v2"
+)
+
+func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, World!")
+	})
+
+	api := app.Group("/api")
+
+	// authen
+	authGroup := api.Group("/auth")
+	authGroup.Post("/login", handlers.Auth.Login)
+	authGroup.Post("/register", handlers.Auth.Register)
+
+	secretGroup := api.Group("/secret", middleware.JWTMiddleware())
+	secretGroup.Get("/data", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"secret_data": "นี่คือข้อมูลลับที่ได้รับการป้องกันด้วย JWT",
+		})
+	})
+
+
+	// device
+	deviceGroup := api.Group("/devices")
+	deviceGroup.Get("/", handlers.Device.ListDevices)
+	deviceGroup.Get("/:device_id", handlers.Device.GetDevice)
+	deviceGroup.Put("/:device_id", handlers.Device.UpdateDevice)
+	deviceGroup.Post("/:device_id/pair", handlers.Device.PairDevice)
+	deviceGroup.Post("/:device_id/unpair", handlers.Device.UnpairDevice)
+
+	// room
+	roomGroup := api.Group("/rooms")
+	roomGroup.Get("/", handlers.Room.ListRooms)
+	roomGroup.Post("/", handlers.Room.CreateRoom)
+	roomGroup.Get("/:room_id", handlers.Room.GetRoom)
+	roomGroup.Put("/:room_id", handlers.Room.UpdateRoom)
+	roomGroup.Delete("/:room_id", handlers.Room.DeleteRoom)
+
+	roomGroup.Post("/:room_id/devices", handlers.Room.AddDevice)
+	roomGroup.Get("/:room_id/devices", handlers.Room.ListDevices)
+	roomGroup.Post("/:room_id/widgets/order", handlers.Widget.ChangeOrder)
+
+	roomGroup.Get("/:room_id/widgets", handlers.Widget.ListByRoom)
+
+	// widget
+	widgetGroup := api.Group("/widgets")
+
+	widgetGroup.Get("/", handlers.Widget.ListWidgets)
+	// widgetGroup.Get("/", handlers.Widget.GetWidgetByStatus)
+	widgetGroup.Get("/:widget_id", handlers.Widget.GetWidget)
+	widgetGroup.Get("/:widget_id/logs", handlers.Widget.GetLogs)
+	widgetGroup.Put("/:widget_id", handlers.Widget.UpdateWidget)
+	widgetGroup.Patch("/:widget_id/status", handlers.Widget.ChangeStatus)
+	widgetGroup.Delete("/:widget_id", handlers.Widget.DeleteWidget)
+
+	widgetGroup.Post("/", handlers.Widget.CreateWidget)
+	widgetGroup.Post("/:widgetId/command", handlers.Command.SendCommand)
+
+	// user
+	userGroup := api.Group("/users")
+
+	userGroup.Get("/", handlers.User.ListUsers)
+	userGroup.Post("/", handlers.User.CreateUser)
+	userGroup.Get("/:user_id", handlers.User.GetUser)
+	userGroup.Delete("/:user_id", handlers.User.DeleteUser)
+	// userGroup.Post("/:user_id/change-password", handlers.User.ChangePassword)
+	userGroup.Post("/:user_id/upload-profile", handlers.User.UploadProfile)
+}
+</file>
+
+<file path="internal/core/domain/device.go">
+package domain
+
+import (
+	"fmt"
+	"time"
+)
+
+type Device struct {
+	DeviceID string
+
+	DeviceName    string
+	DeviceType    string
+	LastHeartbeat time.Time
+	Widgets       []Widget
+}
+
+type DeviceSummary struct {
+	DeviceID      string
+	LastHeartbeat time.Time
+	DeviceName    string
+	DeviceType    string
+}
+
+type DeviceCommand struct {
+	CapabilityType string
+	ControlType    string
+	Value          string
+	ReplyTopic     string
+}
+
+type CommandResponse struct {
+	Status string
+}
+
+func (d *Device) Validate() error {
+	if d.DeviceID == "" {
+		return fmt.Errorf("device id is required")
+	}
+	if d.DeviceName == "" {
+		return fmt.Errorf("device name is required")
+	}
+	if d.DeviceType == "" {
+		return fmt.Errorf("device type is required")
+	}
+	// if d.Topic == "" {
+	// 	return fmt.Errorf("topic is required")
+	// }
+	return nil
+}
+
+type DeviceRepository interface {
+	CreateDevice(device *Device) error
+	FindByWidgetID(widgetID uint) (*Device, error)
+
+	GetAllSummaries() ([]*DeviceSummary, error)
+	GetSummaryByID(deviceID string) (*DeviceSummary, error)
+	GetUnpairDevice() ([]*DeviceSummary, error)
+	GetPairedDevice() ([]*DeviceSummary, error)
+
+	GetByID(deviceID string) (*Device, error)
+	UpdateHeartbeat(deviceID string) error
+	UpdateName(deviceID string, name string) error
+	Pair(deviceID string, deviceKey string) error
+	Unpair(deviceID string) error
+}
+
+type PairCommander interface {
+	RequestPair(deviceID string, deviceKey string) error
+	Subscribe(deviceID string) error
+}
+
+type DeviceCommander interface {
+	RequestCommand(deviceId string, cmd *DeviceCommand, correlationID string) (*CommandResponse, error)
+}
+</file>
+
 <file path="internal/infrastructure/gorm/widget_repo.go">
 package gorm
 
 import (
 	"project-home-iot/internal/core/domain"
-
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -2992,7 +3172,7 @@ func (r *WidgetRepository) FindByRoomID(roomID uint) ([]*domain.Widget, error) {
 	var widgetModels []Widget
 
 	err := r.db.
-		Joins("JOIN devices ON devices.id = widgets.device_id").
+		Joins("JOIN devices ON devices.device_id = widgets.device_id").
 		Where("devices.room_id = ?", roomID).
 		Preload("Device").
 		Preload("Capability").
@@ -3030,20 +3210,34 @@ func (r *WidgetRepository) UpdateStatus(id uint, status string) error {
 }
 
 func (r *WidgetRepository) ChangeOrder(roomID uint, widgetOrders []uint) error {
-	for index, widgetID := range widgetOrders {
+    for index, widgetID := range widgetOrders {
 
-		err := r.db.Model(&Widget{}).
-			Joins("JOIN devices ON devices.device_id = widgets.device_id").
-			Where("widgets.id = ?", widgetID).
-			Where("devices.room_id = ?", roomID).
-			Update("widget_order", index+1).Error
+        var count int64
+        err := r.db.
+            Table("widgets").
+            Joins("JOIN devices ON devices.device_id = widgets.device_id").
+            Where("widgets.id = ?", widgetID).
+            Where("devices.room_id = ?", roomID).
+            Count(&count).Error
 
-		if err != nil {
-			return err
-		}
-	}
+        if err != nil {
+            return err
+        }
 
-	return nil
+        if count == 0 {
+            return fmt.Errorf("widget %d not in room %d", widgetID, roomID)
+        }
+
+        err = r.db.Model(&Widget{}).
+            Where("id = ?", widgetID).
+            Update("widget_order", index).Error
+
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
 }
 
 func (r *WidgetRepository) GetWidgetByStatus(status string) ([]*domain.Widget, error) {
@@ -3109,77 +3303,6 @@ func WidgetModelToDomain(m *Widget) *domain.Widget {
 }
 </file>
 
-<file path="cmd/app/main.go">
-package main
-
-import (
-	"fmt"
-	"project-home-iot/internal/database"
-	"project-home-iot/internal/infrastructure/gorm"
-
-	mqttlib "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
-	// "project-home-iot/internal/core/usecase"
-	// "project-home-iot/internal/infrastructure/gorm"
-	// "project-home-iot/internal/infrastructure/mqtt"
-)
-
-func main() {
-
-	if err := godotenv.Load(); err != nil {
-		fmt.Println("Warning: No .env file found")
-	}
-
-	db := database.ConnectDB()
-
-	fmt.Println("Starting fresh migration...")
-	db.AutoMigrate(
-		&gorm.User{},
-		&gorm.Room{},
-		&gorm.Capability{},
-		&gorm.Device{}, 
-		&gorm.Widget{}, 
-		&gorm.Log{},
-	)
-
-	// db.AutoMigrate(&models.Widget{})
-
-	// opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
-	
-	opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
-
-	client := mqttlib.NewClient(opts)
-
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-
-	handlers := InitializeApp(db, client)
-
-	// recorderRepo := gorm.NewRecorderRepository(db)
-	// widgetRepo := gorm.NewWidgetRepository(db)
-	// recordLogUC := usecase.NewRecordLogUsecase(recorderRepo,widgetRepo)
-
-	// handler := mqtt.NewSensorHandler(recordLogUC)
-	// sub := mqtt.NewSubscriber(client)
-
-	// _ = sub.SubscribeSensor(handler.HandleSensorMessage)
-
-	handlers.MQTT.SubscribeDeviceRegistration(client)
-	client.Publish("xxx/y", 0, false, "Hello MQTT")
-	_ = handlers.SensorSubscriber.SubscribeSensor(handlers.SensorHandler.HandleSensorMessage)
-	app := fiber.New()
-
-	app.Static("/uploads", "./uploads")
-
-	SetupRoutes(app, handlers)
-
-	fmt.Println("Server is starting on :3000...")
-	app.Listen(":3000")
-}
-</file>
-
 <file path="internal/core/usecase/device_usecase.go">
 package usecase
 
@@ -3191,6 +3314,7 @@ type DeviceUsecase interface {
 	RegisterDevice(device *domain.Device) error
 	ListDevices() ([]*domain.DeviceSummary, error)
 	GetUnpairDevice() ([]*domain.DeviceSummary, error)
+	GetPairedDevice() ([]*domain.DeviceSummary, error)
 	GetDevice(id string) (*domain.DeviceSummary, error)
 	UpdateHeartbeat(id string) error
 	UpdateDevice(id string, name string) error
@@ -3248,6 +3372,10 @@ func (u *deviceUsecase) GetUnpairDevice() ([]*domain.DeviceSummary,error) {
 	return u.repo.GetUnpairDevice()
 }
 
+func (u *deviceUsecase) GetPairedDevice() ([]*domain.DeviceSummary,error) {
+	return u.repo.GetPairedDevice()
+}
+
 func (u *deviceUsecase) UpdateDevice(id string, name string) error {
 	return u.repo.UpdateName(id, name)
 }
@@ -3293,6 +3421,83 @@ func (u *deviceUsecase) UnpairDevice(id string) error {
 
 func (u *deviceUsecase) UpdateHeartbeat(id string) error {
 	return u.repo.UpdateHeartbeat(id)
+}
+</file>
+
+<file path="cmd/app/main.go">
+package main
+
+import (
+	"fmt"
+	"project-home-iot/internal/auth"
+	"project-home-iot/internal/database"
+	"project-home-iot/internal/infrastructure/gorm"
+	mqttlib "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
+	// "project-home-iot/internal/core/usecase"
+	// "project-home-iot/internal/infrastructure/gorm"
+	// "project-home-iot/internal/infrastructure/mqtt"
+)
+
+func main() {
+
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("Warning: No .env file found")
+	}
+
+	db := database.ConnectDB()
+
+	fmt.Println("Starting fresh migration...")
+	db.AutoMigrate(
+		&gorm.User{},
+		&gorm.Room{},
+		&gorm.Capability{},
+		&gorm.Device{}, 
+		&gorm.Widget{}, 
+		&gorm.Log{},
+		&auth.UserAccount{},
+	)
+
+	gorm.SeedAll(db)
+
+	// db.AutoMigrate(&models.Widget{})
+
+	opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
+	
+	// opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
+
+	// opts := mqttlib.NewClientOptions().
+    // AddBroker("tcp://broker.hivemq.com:1883").
+    // SetClientID("go-backend-server")
+	client := mqttlib.NewClient(opts)
+
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	handlers := InitializeApp(db, client)
+
+	// recorderRepo := gorm.NewRecorderRepository(db)
+	// widgetRepo := gorm.NewWidgetRepository(db)
+	// recordLogUC := usecase.NewRecordLogUsecase(recorderRepo,widgetRepo)
+
+	// handler := mqtt.NewSensorHandler(recordLogUC)
+	// sub := mqtt.NewSubscriber(client)
+
+	// _ = sub.SubscribeSensor(handler.HandleSensorMessage)
+
+	handlers.MQTT.SubscribeDeviceRegistration(client)
+	client.Publish("xxx/y", 0, false, "Hello MQTT")
+	_ = handlers.SensorSubscriber.SubscribeSensor(handlers.SensorHandler.HandleSensorMessage)
+	app := fiber.New()
+
+	app.Static("/uploads", "./uploads")
+
+	SetupRoutes(app, handlers)
+
+	fmt.Println("Server is starting on :3000...")
+	app.Listen(":3000")
 }
 </file>
 

@@ -18,7 +18,7 @@ type Log struct {
 	User User	`gorm:"foreignKey:Actor;references:Email"`
 
 	WidgetID  uint       `gorm:"not null"`
-	Widget    Widget `gorm:"foreignKey:WidgetID;references:ID"`
+	Widget    Widget `gorm:"foreignKey:WidgetID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type RecorderRepository struct {

@@ -35,6 +35,7 @@ func (r *DeviceRepository) CreateDevice(device *domain.Device) error {
 	return r.db.Create(model).Error
 }
 
+
 func (r *DeviceRepository) FindByWidgetID(widgetID uint) (*domain.Device, error) {
 	var model Device
 
@@ -70,10 +71,14 @@ func (r *DeviceRepository) GetUnpairDevice() ([]*domain.DeviceSummary, error) {
 
 	err := r.db.
 		Model(&Device{}).
-		Select("devices.*").
-		Joins("LEFT JOIN widgets ON widgets.device_id = devices.device_id").
-		Where("widgets.device_id IS NULL").
+		Where("NOT EXISTS (?)",
+			r.db.
+				Select("1").
+				Table("widgets").
+				Where("widgets.device_id = devices.device_id"),
+		).
 		Scan(&result).Error
+
 	return result, err
 }
 
@@ -135,7 +140,7 @@ func (r *DeviceRepository) Pair(id string, deviceKey string) error {
 func (r *DeviceRepository) Unpair(id string) error {
 	return r.db.Model(&Device{}).
 		Where("device_id = ?", id).
-		Update("device_key", "").Error
+		Update("room_id", nil).Error
 }
 
 func (r *DeviceRepository) UpdateHeartbeat(deviceID string) error {
