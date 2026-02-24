@@ -2,9 +2,7 @@ package gorm
 
 import (
 	"project-home-iot/internal/core/domain"
-
 	"gorm.io/gorm"
-
 	// "project-home-iot/internal/infrastructure/gorm/models"
 	// "project-home-iot/internal/infrastructure/mappers"
 )
@@ -34,6 +32,7 @@ func NewRecorderRepository(db *gorm.DB) *RecorderRepository {
 func (r *RecorderRepository) RecordLog(log *domain.Log) error {
 
 	model := LogDomainToModel(log)
+
     if err := r.db.Create(model).Error; err != nil {
         return err
     }
@@ -56,10 +55,14 @@ func (r *RecorderRepository) GetLogByWidgetID(widgetID uint) ([]*domain.Log, err
 }
 
 func LogDomainToModel(d *domain.Log) *Log {
+	actor := d.Actor
+    if actor == "" {
+        actor = "Sensor"
+    }
 	return &Log{
 		WidgetID:  d.WidgetID,
 		Value:     d.Value,
-		Actor: d.Actor,
+		Actor: actor,
 		EventType: d.EventType,
 	}
 }
