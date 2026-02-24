@@ -12,7 +12,7 @@ type WidgetUsecase interface {
 	GetWidgetByStatus(status string) ([]*domain.Widget, error)
 	GetLogs(id uint)([]*domain.Log, error)
 	ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error)
-
+    ListWidgetsByRoomWithStatus(roomID uint, status string) ([]*domain.Widget, error)
 	UpdateValue(widgetID uint, value string) error
 	UpdateStatus(id uint, status string) error
 	ChangeOrder(roomID uint, widgetOrders []uint) error
@@ -57,6 +57,10 @@ func (u *widgetUsecase) GetLogs(id uint) ([]*domain.Log, error){
 
 func (u *widgetUsecase) ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error) {
 	return u.widgetRepo.FindByRoomID(roomID)
+}
+
+func (u *widgetUsecase) ListWidgetsByRoomWithStatus(roomID uint, status string) ([]*domain.Widget, error) {
+	return u.widgetRepo.FindByRoomWithStatus(roomID, status)
 }
 
 func (u *widgetUsecase) UpdateValue(widgetID uint, value string) error {
