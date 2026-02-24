@@ -185,7 +185,9 @@ func (h *WidgetHandler) ListByRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid room id")
 	}
 
-	widgets, err := h.usecase.ListWidgetsByRoom(uint(roomID))
+	status := c.Query("status") // include / exclude
+
+	widgets, err := h.usecase.ListWidgetsByRoomWithStatus(uint(roomID), status)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

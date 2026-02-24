@@ -38,6 +38,7 @@ func main() {
 
 	opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
 	
+	// opts := mqttlib.NewClientOptions().AddBroker("tcp://192.168.137.251:1883").SetClientID("go-backend-server")
 	// opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
 
 	// opts := mqttlib.NewClientOptions().

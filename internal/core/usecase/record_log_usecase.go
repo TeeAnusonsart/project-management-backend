@@ -6,7 +6,7 @@ import (
 
 type RecordLogUsecase interface {
 	// Execute(deviceId string, capabilityId uint, eventType string, value uint) error
-	Execute(deviceId string, capabilityType string,controlType string, eventType string, value string) error
+	Execute(deviceId string, capabilityType string,controlType string, eventType string, value string, actor string) error
 }
 
 type recordLogUsecase struct {
@@ -19,7 +19,7 @@ func NewRecordLogUsecase(r domain.Recorder,wr domain.WidgetRepository,cr domain.
 	return &recordLogUsecase{recorder: r, widgetRepo: wr,capabilityRepo: cr}
 }
 
-func (uc *recordLogUsecase) Execute(deviceId string, capabilityType string,controlType string, eventType string, value string) error {
+func (uc *recordLogUsecase) Execute(deviceId string, capabilityType string,controlType string, eventType string, value string, actor string) error {
 	capability,err := uc.capabilityRepo.FindByTypeAndControl(capabilityType, controlType)
 	if err != nil {
 		return err
@@ -29,6 +29,7 @@ func (uc *recordLogUsecase) Execute(deviceId string, capabilityType string,contr
         WidgetID:  widget.ID,
         EventType: eventType,
         Value:     value,
+		Actor: actor,
     }
 	uc.widgetRepo.UpdateValue(widget.ID,value)
     return uc.recorder.RecordLog(logEntry)

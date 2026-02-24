@@ -108,6 +108,31 @@ func (r *WidgetRepository) FindByRoomID(roomID uint) ([]*domain.Widget, error) {
 	return result, nil
 }
 
+func (r *WidgetRepository) FindByRoomWithStatus(roomID uint, status string) ([]*domain.Widget, error) {
+
+	var widgetModels []Widget
+
+	err := r.db.
+		Joins("JOIN devices ON devices.device_id = widgets.device_id").
+		Where("devices.room_id = ?", roomID).
+		Where("widgets.widget_status = ?", status).
+		Preload("Device").
+		Preload("Capability").
+		Order("widget_order asc").
+		Find(&widgetModels).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*domain.Widget
+	for _, m := range widgetModels {
+		result = append(result, WidgetModelToDomain(&m))
+	}
+
+	return result, nil
+}
+
 func (r *WidgetRepository) Delete(id uint) error {
 	return r.db.Delete(&Widget{}, id).Error
 }

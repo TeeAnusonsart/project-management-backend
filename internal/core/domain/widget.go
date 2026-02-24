@@ -37,6 +37,7 @@ type WidgetRepository interface {
 	FindByID(id uint) (*Widget, error)
 	FindByRoomID(roomID uint) ([]*Widget, error)
 	GetWidgetByStatus(status string) ([]*Widget, error)
+    FindByRoomWithStatus(roomID uint, status string) ([]*Widget, error)
 
 	UpdateValue(widgetID uint, value string) error
 	UpdateStatus(id uint, status string) error

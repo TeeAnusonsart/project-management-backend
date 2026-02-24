@@ -46,6 +46,8 @@ func (h *SensorHandler) HandleSensorMessage(
 		// payload.CapabilityID,
 		"sensor",
 		payload.Value,
+		payload.Actor,
+
 	)
 }
 
@@ -54,4 +56,5 @@ type SensorPayload struct {
 	CapabilityType string `json:"capability_type"`
 	ControlType string `json:"control_type"`
 	Value string `json:"value"`
+	Actor string `json:"actor"`
 }
