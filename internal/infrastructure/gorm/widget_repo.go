@@ -208,6 +208,15 @@ func (r *WidgetRepository) GetWidgetByStatus(status string) ([]*domain.Widget, e
 	return result, nil
 }
 
+func (r *WidgetRepository) ExistsByDeviceID(deviceID string) (bool, error) {
+    var count int64
+    err := r.db.Model(Widget{}).
+        Where("device_id = ?", deviceID).
+        Count(&count).Error
+
+    return count > 0, err
+}
+
 func WidgetDomainToModel(d *domain.Widget) *Widget {
 	return &Widget{
 		Model: gorm.Model{ID: d.ID},

@@ -80,24 +80,29 @@ func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
         return err
     }
 
+    exists, err := u.widgetRepo.ExistsByDeviceID(device.DeviceID)
+    if err != nil {
+        return err
+    }
+    if exists {
+        return domain.ErrDeviceAlreadyPaired
+    }
+
     if err := u.pairCommander.RequestPair(device.DeviceID, deviceKey); err != nil {
         return err
     }
 
-    // ดึงรายการ Capability ของอุปกรณ์ประเภทนั้นๆ
     capsRefs := DeviceCapabilityMap[device.DeviceType]
-    
+
     for _, ref := range capsRefs {
-        // ใช้ FindByTypeAndControl เพื่อความแม่นยำ
         cap, err := u.capabilityRepo.FindByTypeAndControl(ref.Type, ref.Control)
         if err != nil {
-            // อาจจะ log error แล้ว continue หรือ return error ตามความเหมาะสม
-            continue 
+            continue
         }
 
         widget := &domain.Widget{
             DeviceID:     device.DeviceID,
-            CapabilityID:   cap.ID,
+            CapabilityID: cap.ID,
             WidgetStatus: "exclude",
         }
 
@@ -114,7 +119,6 @@ func (u *deviceUsecase) UnpairDevice(id string) error {
 	if err := u.widgetRepo.DeleteByDeviceId(id); err != nil {
 		return err
 	}
-	
 	if err := u.repo.Unpair(id); err != nil {
 		return err
 	}

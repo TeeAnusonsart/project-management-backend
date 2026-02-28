@@ -39,6 +39,8 @@ type WidgetRepository interface {
 	GetWidgetByStatus(status string) ([]*Widget, error)
     FindByRoomWithStatus(roomID uint, status string) ([]*Widget, error)
 
+	ExistsByDeviceID(deviceID string) (bool, error)
+
 	UpdateValue(widgetID uint, value string) error
 	UpdateStatus(id uint, status string) error
 	ChangeOrder(roomID uint, widgetOrders []uint) error

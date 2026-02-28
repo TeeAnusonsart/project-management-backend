@@ -4,7 +4,7 @@ import (
 	"project-home-iot/internal/core/domain"
 	// "project-home-iot/internal/infrastructure/gorm/models"
 	"time"
-
+	"errors"
 	"gorm.io/gorm"
 )
 
@@ -100,9 +100,14 @@ func (r *DeviceRepository) GetPairedDevice() ([]*domain.DeviceSummary, error) {
 func (r *DeviceRepository) GetByID(id string) (*domain.Device, error) {
 	var model Device
 
-	if err := r.db.
+	err := r.db.
 		Where("device_id = ?", id).
-		First(&model).Error; err != nil {
+		First(&model).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrDeviceNotFound
+		}
 		return nil, err
 	}
 

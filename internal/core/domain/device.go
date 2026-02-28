@@ -32,6 +32,7 @@ type CommandResponse struct {
 	Status string
 }
 
+
 func (d *Device) Validate() error {
 	if d.DeviceID == "" {
 		return fmt.Errorf("device id is required")
