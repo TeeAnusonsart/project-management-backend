@@ -2,11 +2,11 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
 	"strconv"
 	"time"
-
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,17 +23,17 @@ func NewWidgetHandler(u usecase.WidgetUsecase) *WidgetHandler {
 type CreateWidgetRequest struct {
 	DeviceID     string `json:"device_id" validate:"required"`
 	CapabilityID uint   `json:"capability_id" validate:"required"`
-	WidgetStatus string `json:"widget_status" validate:"required,oneof=active inactive"`
+	WidgetStatus string `json:"widget_status" validate:"required,oneof=include exclude"`
 }
 
 type UpdateWidgetRequest struct {
 	DeviceID     string `json:"device_id" validate:"required"`
 	CapabilityID uint   `json:"capability_id" validate:"required"`
-	WidgetStatus string `json:"widget_status" validate:"required,oneof=active inactive"`
+	WidgetStatus string `json:"widget_status" validate:"required,oneof=include exclude"`
 }
 
 type ChangeStatusRequest struct {
-	WidgetStatus string `json:"widget_status" validate:"required,oneof=active inactive"`
+	WidgetStatus string `json:"widget_status" validate:"required,oneof=include exclude"`
 }
 
 type ChangeOrderRequest struct {
@@ -241,6 +241,7 @@ func (h *WidgetHandler) ListByRoom(c *fiber.Ctx) error {
 
 	response := make([]WidgetResponse, 0)
 	for _, w := range widgets {
+		fmt.Print(w.ID)
 		response = append(response, ToWidgetResponse(w))
 	}
 
