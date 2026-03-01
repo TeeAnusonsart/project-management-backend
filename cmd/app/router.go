@@ -66,8 +66,8 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 
 	userGroup.Get("/", handlers.User.ListUsers)
 	userGroup.Post("/", handlers.User.CreateUser)
-	userGroup.Get("/:user_id", handlers.User.GetUser)
-	userGroup.Delete("/:user_id", handlers.User.DeleteUser)
+	userGroup.Get("/:email", handlers.User.GetUser)
+	userGroup.Delete("/:email", handlers.User.DeleteUser)
 	// userGroup.Post("/:user_id/change-password", handlers.User.ChangePassword)
-	userGroup.Post("/:user_id/upload-profile", handlers.User.UploadProfile)
+	// userGroup.Post("/:user_id/upload-profile", handlers.User.UploadProfile)
 }

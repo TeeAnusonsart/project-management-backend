@@ -37,7 +37,7 @@ type ChangeStatusRequest struct {
 }
 
 type ChangeOrderRequest struct {
-	WidgetOrders []uint `json:"widget_orders" validate:"required,min=1"`
+	WidgetOrders []uint `json:"widget_orders" validate:"required,min=0"`
 }
 
 // --- Handler Methods ---
@@ -55,7 +55,7 @@ func (h *WidgetHandler) ListWidgets(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "เกิดข้อผิดพลาดในการดึงข้อมูล", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve widgets")
 	}
 
 	response := make([]WidgetResponse, 0)
@@ -63,37 +63,37 @@ func (h *WidgetHandler) ListWidgets(c *fiber.Ctx) error {
 		response = append(response, ToWidgetResponse(w))
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เรียกดูข้อมูลสำเร็จ", response)
+	return sendResponse(c, fiber.StatusOK, "Widgets retrieved successfully", response)
 }
 
 // [GET] /widgets/:widget_id
 func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("widget_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Widget ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Widget ID format")
 	}
 
 	w, err := h.usecase.GetWidget(uint(id))
 	if err != nil {
-		if errors.Is(err, domain.ErrDeviceNotFound) { // สามารถเปลี่ยนเป็น ErrWidgetNotFound ได้
-			return sendResponse(c, fiber.StatusNotFound, "ไม่พบข้อมูล Widget", nil)
+		if errors.Is(err, domain.ErrDeviceNotFound) { // สามารถเปลี่ยนเป็น ErrWidgetNotFound ได้ตามโดเมนของคุณ
+			return fiber.NewError(fiber.StatusNotFound, "Widget not found")
 		}
-		return sendResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เรียกดูข้อมูลสำเร็จ", ToWidgetResponse(w))
+	return sendResponse(c, fiber.StatusOK, "Widget retrieved successfully", ToWidgetResponse(w))
 }
 
 // [GET] /widgets/:widget_id/logs
 func (h *WidgetHandler) GetLogs(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("widget_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Widget ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Widget ID format")
 	}
 
 	logs, err := h.usecase.GetLogs(uint(id))
 	if err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถดึงข้อมูล Logs ได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve logs")
 	}
 
 	response := make([]LogResponse, 0)
@@ -101,21 +101,21 @@ func (h *WidgetHandler) GetLogs(c *fiber.Ctx) error {
 		response = append(response, ToLogResponse(l))
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เรียกดู Logs สำเร็จ", response)
+	return sendResponse(c, fiber.StatusOK, "Logs retrieved successfully", response)
 }
 
 // [POST] /widgets
 func (h *WidgetHandler) CreateWidget(c *fiber.Ctx) error {
 	var req CreateWidgetRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
 			Code:    fiber.StatusUnprocessableEntity,
-			Message: "ข้อมูลไม่ถูกต้อง",
+			Message: "Validation failed",
 			Errors:  fieldErrors,
 		})
 	}
@@ -129,29 +129,29 @@ func (h *WidgetHandler) CreateWidget(c *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.CreateWidget(widget); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถสร้าง Widget ได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create widget")
 	}
 
-	return sendResponse(c, fiber.StatusCreated, "เพิ่ม widget ใหม่เรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusCreated, "Widget created successfully", nil)
 }
 
 // [PUT] /widgets/:widget_id
 func (h *WidgetHandler) UpdateWidget(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("widget_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Widget ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Widget ID format")
 	}
 
 	var req UpdateWidgetRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
 			Code:    fiber.StatusUnprocessableEntity,
-			Message: "ข้อมูลไม่ถูกต้อง",
+			Message: "Validation failed",
 			Errors:  fieldErrors,
 		})
 	}
@@ -164,79 +164,79 @@ func (h *WidgetHandler) UpdateWidget(c *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.UpdateWidget(widget); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถแก้ไขข้อมูลได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to update widget")
 	}
 
-	return sendResponse(c, fiber.StatusOK, "แก้ไขข้อมูลของ widget เรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusOK, "Widget updated successfully", nil)
 }
 
 // [PATCH] /widgets/:widget_id/status
 func (h *WidgetHandler) ChangeStatus(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("widget_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Widget ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Widget ID format")
 	}
 
 	var req ChangeStatusRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
 			Code:    fiber.StatusUnprocessableEntity,
-			Message: "ข้อมูลสถานะไม่ถูกต้อง",
+			Message: "Validation failed for status data",
 			Errors:  fieldErrors,
 		})
 	}
 
 	if err := h.usecase.UpdateStatus(uint(id), req.WidgetStatus); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถเปลี่ยนสถานะได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to change widget status")
 	}
 
-	return sendResponse(c, fiber.StatusOK, "การดำเนินการเสร็จสิ้น", nil)
+	return sendResponse(c, fiber.StatusOK, "Widget status updated successfully", nil)
 }
 
 // [PATCH] /rooms/:room_id/widgets/order
 func (h *WidgetHandler) ChangeOrder(c *fiber.Ctx) error {
 	roomID, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Room ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Room ID format")
 	}
 
 	var req ChangeOrderRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
 			Code:    fiber.StatusUnprocessableEntity,
-			Message: "ข้อมูลลำดับไม่ถูกต้อง",
+			Message: "Validation failed for order data",
 			Errors:  fieldErrors,
 		})
 	}
 
 	if err := h.usecase.ChangeOrder(uint(roomID), req.WidgetOrders); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถเปลี่ยนลำดับได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to change widget order")
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เปลี่ยนลำดับ widget เรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusOK, "Widget order changed successfully", nil)
 }
 
 // [GET] /rooms/:room_id/widgets
 func (h *WidgetHandler) ListByRoom(c *fiber.Ctx) error {
 	roomID, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Room ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Room ID format")
 	}
 
 	status := c.Query("status")
 	widgets, err := h.usecase.ListWidgetsByRoomWithStatus(uint(roomID), status)
 	if err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถดึงข้อมูลได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve widgets for the room")
 	}
 
 	response := make([]WidgetResponse, 0)
@@ -244,21 +244,21 @@ func (h *WidgetHandler) ListByRoom(c *fiber.Ctx) error {
 		response = append(response, ToWidgetResponse(w))
 	}
 
-	return sendResponse(c, fiber.StatusOK, "ดึงข้อมูล Widget ตามห้องสำเร็จ", response)
+	return sendResponse(c, fiber.StatusOK, "Widgets for the room retrieved successfully", response)
 }
 
 // [DELETE] /widgets/:widget_id
 func (h *WidgetHandler) DeleteWidget(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("widget_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Widget ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Widget ID format")
 	}
 
 	if err := h.usecase.DeleteWidget(uint(id)); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถลบ Widget ได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to delete widget")
 	}
 
-	return sendResponse(c, fiber.StatusOK, "นำ widget ออกเรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusOK, "Widget deleted successfully", nil)
 }
 
 // --- Response Helpers & DTOs ---
@@ -271,10 +271,10 @@ type LogResponse struct {
 }
 
 type WidgetResponse struct {
-	WidgetID     uint          `json:"widget_id"`
-	WidgetOrder  uint          `json:"widget_order"`
-	WidgetStatus string        `json:"widget_status"`
-	Value        string        `json:"value"`
+	WidgetID     uint           `json:"widget_id"`
+	WidgetOrder  uint           `json:"widget_order"`
+	WidgetStatus string         `json:"widget_status"`
+	Value        string         `json:"value"`
 	Device       *DeviceDTO     `json:"device,omitempty"`
 	Capability   *CapabilityDTO `json:"capability,omitempty"`
 }

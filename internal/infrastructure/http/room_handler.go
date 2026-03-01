@@ -37,7 +37,7 @@ type AddDeviceToRoomRequest struct {
 func (h *RoomHandler) ListRooms(c *fiber.Ctx) error {
 	rooms, err := h.usecase.ListRooms()
 	if err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถดึงข้อมูลห้องได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve rooms")
 	}
 
 	response := make([]RoomResponse, 0)
@@ -45,130 +45,132 @@ func (h *RoomHandler) ListRooms(c *fiber.Ctx) error {
 		response = append(response, ToRoomResponse(r))
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เรียกดูข้อมูลสำเร็จ", response)
+	return sendResponse(c, fiber.StatusOK, "Rooms retrieved successfully", response)
 }
 
 // [GET] /rooms/:room_id
 func (h *RoomHandler) GetRoom(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Room ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Room ID format")
 	}
 
 	room, err := h.usecase.GetRoom(uint(id))
 	if err != nil {
-		if errors.Is(err, domain.ErrDeviceNotFound) { // ปรับเป็น ErrRoomNotFound หากมีใน domain
-			return sendResponse(c, fiber.StatusNotFound, "ไม่พบข้อมูลห้อง", nil)
+		// เช็คว่าเป็น Error แบบหาไม่เจอ หรือ Error ระบบ
+		if errors.Is(err, domain.ErrDeviceNotFound) { // หมายเหตุ: หากใน domain มี ErrRoomNotFound ควรปรับไปใช้อันนั้นครับ
+			return fiber.NewError(fiber.StatusNotFound, "Room not found")
 		}
-		return sendResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เรียกดูข้อมูลสำเร็จ", ToRoomResponse(room))
+	return sendResponse(c, fiber.StatusOK, "Room retrieved successfully", ToRoomResponse(room))
 }
 
 // [POST] /rooms
 func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	var req CreateRoomRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
+	// คงรูปแบบ Response อันนี้ไว้เพื่อให้ส่ง fieldErrors กลับไปได้
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
 			Code:    fiber.StatusUnprocessableEntity,
-			Message: "ข้อมูลไม่ถูกต้อง",
+			Message: "Validation failed",
 			Errors:  fieldErrors,
 		})
 	}
 
 	if err := h.usecase.CreateRoom(req.RoomName); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถสร้างห้องได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create room")
 	}
 
-	return sendResponse(c, fiber.StatusCreated, "เพิ่มห้องใหม่เรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusCreated, "Room created successfully", nil)
 }
 
 // [PUT] /rooms/:room_id
 func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Room ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Room ID format")
 	}
 
 	var req UpdateRoomRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
 			Code:    fiber.StatusUnprocessableEntity,
-			Message: "ข้อมูลไม่ถูกต้อง",
+			Message: "Validation failed",
 			Errors:  fieldErrors,
 		})
 	}
 
 	if err := h.usecase.UpdateRoom(uint(id), req.RoomName); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถแก้ไขข้อมูลห้องได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to update room")
 	}
 
-	return sendResponse(c, fiber.StatusOK, "แก้ไขข้อมูลของห้องเรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusOK, "Room updated successfully", nil)
 }
 
 // [DELETE] /rooms/:room_id
 func (h *RoomHandler) DeleteRoom(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Room ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Room ID format")
 	}
 
 	if err := h.usecase.DeleteRoom(uint(id)); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถลบห้องได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to delete room")
 	}
 
-	return sendResponse(c, fiber.StatusOK, "นำห้องออกเรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusOK, "Room deleted successfully", nil)
 }
 
 // [POST] /rooms/:room_id/devices
 func (h *RoomHandler) AddDevice(c *fiber.Ctx) error {
 	roomID, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Room ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Room ID format")
 	}
 
 	var req AddDeviceToRoomRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
 			Code:    fiber.StatusUnprocessableEntity,
-			Message: "ข้อมูลอุปกรณ์ไม่ถูกต้อง",
+			Message: "Validation failed for device data",
 			Errors:  fieldErrors,
 		})
 	}
 
 	if err := h.usecase.AddDeviceToRoom(uint(roomID), req.DeviceID); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถเพิ่มอุปกรณ์เข้าห้องได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to add device to room")
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เพิ่มอุปกรณ์ภายในห้องเรียบร้อยแล้ว", nil)
+	return sendResponse(c, fiber.StatusOK, "Device added to room successfully", nil)
 }
 
 // [GET] /rooms/:room_id/devices
 func (h *RoomHandler) ListDevices(c *fiber.Ctx) error {
 	roomID, err := strconv.ParseUint(c.Params("room_id"), 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Room ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Room ID format")
 	}
 
 	devices, err := h.usecase.ListDevicesInRoom(uint(roomID))
 	if err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถดึงข้อมูลอุปกรณ์ในห้องได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve devices in room")
 	}
 
 	response := make([]DeviceResponse, 0)
@@ -176,7 +178,7 @@ func (h *RoomHandler) ListDevices(c *fiber.Ctx) error {
 		response = append(response, ToDeviceResponse(d))
 	}
 
-	return sendResponse(c, fiber.StatusOK, "เรียกดูอุปกรณ์ภายในห้องสำเร็จ", response)
+	return sendResponse(c, fiber.StatusOK, "Devices in room retrieved successfully", response)
 }
 
 // --- Response Helpers & DTOs ---

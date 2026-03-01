@@ -30,14 +30,15 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 	widgetIDParam := c.Params("widgetId")
 	widgetID, err := strconv.ParseUint(widgetIDParam, 10, 64)
 	if err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบ Widget ID ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Widget ID format")
 	}
 
 	var req SendCommandRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendResponse(c, fiber.StatusBadRequest, "รูปแบบข้อมูล JSON ไม่ถูกต้อง", nil)
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
+	// ใช้ validateStruct จากไฟล์ validator.go ที่เราสร้างไว้ร่วมกัน
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
@@ -47,14 +48,16 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 		})
 	}
 
-	// 4. Business Logic
 	widget, err := h.widgetUsecase.GetWidget(uint(widgetID))
 	if err != nil {
-		if errors.Is(err, domain.ErrDeviceNotFound) { // หรือเพิ่ม ErrWidgetNotFound ใน domain
-			return sendResponse(c, fiber.StatusNotFound, "ไม่พบ Widget ที่ระบุ", nil)
+		// เช็คว่าเป็น Error แบบ "หาไม่เจอ" หรือไม่ (อย่าลืมประกาศ ErrWidgetNotFound ใน package domain ด้วยนะครับ)
+		if errors.Is(err, domain.ErrWidgetNotFound) { 
+			return fiber.NewError(fiber.StatusNotFound, "Widget not found")
 		}
-		return sendResponse(c, fiber.StatusInternalServerError, "เกิดข้อผิดพลาดในการดึงข้อมูล Widget", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve widget data")
 	}
+
+	
 
 	correlationID := uuid.NewString()
 
@@ -66,11 +69,11 @@ func (h *CommandHandler) SendCommand(c *fiber.Ctx) error {
 	}
 
 	if err := h.commandUsecase.SendCommand(cmd, req.Actor, uint(widgetID), correlationID); err != nil {
-		return sendResponse(c, fiber.StatusInternalServerError, "ไม่สามารถส่งคำสั่งไปยังอุปกรณ์ได้", nil)
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to send command to the device")
 	}
 
-	// 5. Success Response
-	return sendResponse(c, fiber.StatusAccepted, "ส่งคำสั่งเรียบร้อยแล้ว", fiber.Map{
+	// Success Response
+	return sendResponse(c, fiber.StatusAccepted, "Command sent successfully", fiber.Map{
 		"correlation_id": correlationID,
 	})
 }

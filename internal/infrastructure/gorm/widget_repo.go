@@ -4,6 +4,7 @@ import (
 	"project-home-iot/internal/core/domain"
 	"fmt"
 	"gorm.io/gorm"
+	"errors"
 )
 
 type Widget struct {
@@ -71,18 +72,22 @@ func (r *WidgetRepository) FindAll() ([]*domain.Widget, error) {
 
 
 func (r *WidgetRepository) FindByID(id uint) (*domain.Widget, error) {
-	var widgetModel Widget
+    var widgetModel Widget
 
-	err := r.db.
-		Preload("Device").
-		Preload("Capability").
-		First(&widgetModel, id).Error
+    err := r.db.
+        Preload("Device").
+        Preload("Capability").
+        First(&widgetModel, id).Error
 
-	if err != nil {
-		return nil, err
-	}
+    if err != nil {
+        // เช็คว่าถ้าหาไม่เจอ ให้ส่ง Error ของ Domain กลับไป
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, domain.ErrWidgetNotFound 
+        }
+        return nil, err
+    }
 
-	return WidgetModelToDomain(&widgetModel), nil
+    return WidgetModelToDomain(&widgetModel), nil
 }
 
 func (r *WidgetRepository) FindByRoomID(roomID uint) ([]*domain.Widget, error) {

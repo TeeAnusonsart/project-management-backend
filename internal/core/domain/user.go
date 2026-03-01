@@ -25,9 +25,10 @@ func (r UserRole) IsValid() bool {
 type UserRepository interface {
 	Create(user *User) error
 	FindAll() ([]*User, error)
-	FindByID(id uint) (*User, error)
-	Delete(id uint) error
+	// FindByUID(uid uint) (*User, error)
+	FindByEmail(email string) (*User, error)
+	Delete(email string) error
 
-	UpdatePassword(id uint, hashedPassword string) error
-	UpdateProfilePath(id uint, path string) error
+	// UpdatePassword(id uint, hashedPassword string) error
+	// UpdateProfilePath(id uint, path string) error
 }

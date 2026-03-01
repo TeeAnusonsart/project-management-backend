@@ -1,14 +1,10 @@
 package http
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-
-	"github.com/gofiber/fiber/v2"
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type UserHandler struct {
@@ -19,131 +15,108 @@ func NewUserHandler(u usecase.UserUsecase) *UserHandler {
 	return &UserHandler{usecase: u}
 }
 
+// --- Request DTOs ---
+
+type CreateUserRequest struct {
+	Name  string `json:"name" validate:"required"`
+	Email string `json:"email" validate:"required,email"` // Added validate:"email" to check email format
+}
+
+// --- Handler Methods ---
+
+// [GET] /users
 func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 	users, err := h.usecase.ListUsers()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve users")
 	}
-
-	var response []UserResponse
+	response := make([]UserResponse, 0)
 	for _, u := range users {
 		response = append(response, ToUserResponse(u))
 	}
 
-	return c.JSON(fiber.Map{"data": response})
+	return sendResponse(c, fiber.StatusOK, "Users retrieved successfully", response)
 }
 
+// [POST] /users
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	var req CreateUserRequest
 
+	// 1. Validate JSON payload
 	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
+	// 2. Structural validation (Required, Email, etc.)
+	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
+			Status:  "error",
+			Code:    fiber.StatusUnprocessableEntity,
+			Message: "Validation failed",
+			Errors:  fieldErrors,
+		})
+	}
+
+	// 3. Map to Domain Model
 	user := &domain.User{
-		Email:       req.Email,
-		Role: domain.RoleUser,
+		Email: req.Email,
+		Name:  req.Name,
+		Role:  domain.RoleUser,
 	}
 
+	// 4. Save to Database
 	if err := h.usecase.CreateUser(user); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		// You can pass err.Error() if you want the frontend to see the exact error, 
+		// or keep it generic to hide database details.
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(fiber.Map{
-		"message": "เพิ่มผู้ใช้งานเรียบร้อยแล้ว",
-	})
+	return sendResponse(c, fiber.StatusCreated, "User created successfully", nil)
 }
 
+// [GET] /users/:email
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
+	email := c.Params("email")
+
+	if email == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Email parameter is missing")
 	}
 
-	user, err := h.usecase.GetUser(uint(id))
+	user, err := h.usecase.GetUser(email)
 	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+		return fiber.NewError(fiber.StatusNotFound, "User not found")
 	}
 
-	return c.JSON(ToUserResponse(user))
+	return sendResponse(c, fiber.StatusOK, "User retrieved successfully", ToUserResponse(user))
 }
 
+// [DELETE] /users/:email
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
+	email := c.Params("email")
+
+	if email == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Email parameter is missing")
 	}
 
-	if err := h.usecase.DeleteUser(uint(id)); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	if err := h.usecase.DeleteUser(email); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to delete user account")
 	}
 
-	return c.JSON(fiber.Map{
-		"message": "ลบบัญชีผู้ใช้งานเรียบร้อยแล้ว",
-	})
+	return sendResponse(c, fiber.StatusOK, "User account deleted successfully", nil)
 }
 
+// --- Response Helpers & DTOs ---
 
-func (h *UserHandler) UploadProfile(c *fiber.Ctx) error {
-	id, err := strconv.ParseUint(c.Params("user_id"), 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user id")
-	}
-
-	file, err := c.FormFile("profile")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "profile file is required")
-	}
-
-	uploadDir := "./uploads"
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		if err := os.Mkdir(uploadDir, os.ModePerm); err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-		}
-	}
-
-	filename := fmt.Sprintf("user_%d_%s", id, file.Filename)
-	savePath := filepath.Join(uploadDir, filename)
-
-	if err := c.SaveFile(file, savePath); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	if err := h.usecase.UploadProfile(uint(id), savePath); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(fiber.Map{
-		"message":      "อัปโหลดรูปโปรไฟล์เรียบร้อยแล้ว",
-		"profile_path": savePath,
-	})
+type UserResponse struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
 }
 
 func ToUserResponse(u *domain.User) UserResponse {
 	return UserResponse{
-		Email:       u.Email,
-		Role:        string(u.Role),
+		Name:  u.Name,
+		Email: u.Email,
+		Role:  string(u.Role),
 	}
-}
-
-type CreateUserRequest struct {
-	Username    string `json:"username"`
-	Name        string `json:"name"`
-	Password    string `json:"password"`
-	Email       string `json:"email"`
-	ProfilePath string `json:"profile_path"`
-}
-
-type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
-}
-
-type UserResponse struct {
-	UserID      uint   `json:"user_id"`
-	Username    string `json:"username"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	ProfilePath string `json:"profile_path"`
-	Role        string `json:"role"`
 }

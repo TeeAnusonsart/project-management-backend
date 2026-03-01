@@ -53,8 +53,8 @@ func (h *SensorHandler) HandleSensorMessage(
 
 type SensorPayload struct {
 	// CapabilityID uint `json:"capability_id"`
-	CapabilityType string `json:"capability_type" validate:"required`
-	ControlType string `json:"control_type" validate:"required`
-	Value string `json:"value" validate:"required`
-	Actor string `json:"actor" validate:"required`
+	CapabilityType string `json:"capability_type" validate:"required"`
+	ControlType string `json:"control_type" validate:"required"`
+	Value string `json:"value" validate:"required"`
+	Actor string `json:"actor" validate:"required"`
 }
