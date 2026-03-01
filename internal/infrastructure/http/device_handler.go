@@ -165,10 +165,10 @@ type PairDeviceRequest struct {
 }
 
 type DeviceResponse struct {
-	DeviceID            string     `json:"id"`
-	DeviceName          string     `json:"name"`
-	DeviceType          string     `json:"type"`
-	DeviceLastHeartbeat *time.Time `json:"lastHeartbeatAt"`
+	DeviceID            string     `json:"device_id"`
+	DeviceName          string     `json:"device_name"`
+	DeviceType          string     `json:"device_type"`
+	DeviceLastHeartbeat *time.Time `json:"device_last_heartbeat"`
 }
 
 func ToDeviceResponse(d *domain.DeviceSummary) DeviceResponse {
