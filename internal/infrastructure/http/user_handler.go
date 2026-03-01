@@ -22,6 +22,10 @@ type CreateUserRequest struct {
 	Email string `json:"email" validate:"required,email"` // Added validate:"email" to check email format
 }
 
+type LoginRequest struct {
+    Token string `json:"token" validate:"required"`
+}
+
 // --- Handler Methods ---
 
 // [GET] /users
@@ -88,6 +92,20 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	}
 
 	return sendResponse(c, fiber.StatusOK, "User retrieved successfully", ToUserResponse(user))
+}
+
+func (h *UserHandler) Login(c *fiber.Ctx) error {
+    var req LoginRequest
+    if err := c.BodyParser(&req); err != nil {
+        return fiber.NewError(fiber.StatusBadRequest, "Invalid request")
+    }
+
+    user, err := h.usecase.Login(c.Context(), req.Token)
+    if err != nil {
+        return fiber.NewError(fiber.StatusUnauthorized, err.Error())
+    }
+
+    return sendResponse(c, fiber.StatusOK, "Login successful", ToUserResponse(user))
 }
 
 // [DELETE] /users/:email

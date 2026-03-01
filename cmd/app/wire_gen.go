@@ -7,10 +7,11 @@
 package main
 
 import (
+	"firebase.google.com/go/v4/auth"
 	"github.com/eclipse/paho.mqtt.golang"
 	"gorm.io/gorm"
-	"project-home-iot/internal/auth"
 	"project-home-iot/internal/core/usecase"
+	"project-home-iot/internal/firebase"
 	gorm2 "project-home-iot/internal/infrastructure/gorm"
 	"project-home-iot/internal/infrastructure/http"
 	mqtt2 "project-home-iot/internal/infrastructure/mqtt"
@@ -18,10 +19,11 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
-	repository := auth.NewRepository(db)
-	authService := auth.NewService(repository)
-	authHandler := auth.NewAuthHandler(authService)
+func InitializeApp(db *gorm.DB, client mqtt.Client) (*AppHandlers, error) {
+	authClient, err := firebase.NewFirebaseAuthClient()
+	if err != nil {
+		return nil, err
+	}
 	deviceRepository := gorm2.NewDeviceRepository(db)
 	capabilityRepository := gorm2.NewCapabilityRepository(db)
 	widgetRepository := gorm2.NewWidgetRepository(db)
@@ -38,14 +40,14 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 	roomHandler := http.NewRoomHandler(roomUsecase)
 	widgetHandler := http.NewWidgetHandler(widgetUsecase)
 	userRepository := gorm2.NewUserRepository(db)
-	userUsecase := usecase.NewUserUsecase(userRepository)
+	userUsecase := usecase.NewUserUsecase(userRepository, authClient)
 	userHandler := http.NewUserHandler(userUsecase)
 	mqttHandler := mqtt2.NewMQTTHandler(deviceUsecase, widgetUsecase)
 	sensorSubscriber := mqtt2.NewSensorSubscriber(client)
 	recordLogUsecase := usecase.NewRecordLogUsecase(recorderRepository, widgetRepository, capabilityRepository)
 	sensorHandler := mqtt2.NewSensorHandler(recordLogUsecase, deviceUsecase)
 	appHandlers := &AppHandlers{
-		Auth:             authHandler,
+		AuthClient:       authClient,
 		Device:           deviceHandler,
 		Command:          commandHandler,
 		Room:             roomHandler,
@@ -55,13 +57,14 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		SensorSubscriber: sensorSubscriber,
 		SensorHandler:    sensorHandler,
 	}
-	return appHandlers
+	return appHandlers, nil
 }
 
 // wire.go:
 
 type AppHandlers struct {
-	Auth             *auth.AuthHandler
+	// Auth    *auth.AuthHandler
+	AuthClient       *auth.Client
 	Device           *http.DeviceHandler
 	Command          *http.CommandHandler
 	Room             *http.RoomHandler

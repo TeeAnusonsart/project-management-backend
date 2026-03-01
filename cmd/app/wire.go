@@ -4,20 +4,21 @@
 package main
 
 import (
-	"project-home-iot/internal/auth"
 	"project-home-iot/internal/core/domain"
+	"firebase.google.com/go/v4/auth"
 	"project-home-iot/internal/core/usecase"
 	gormRepo "project-home-iot/internal/infrastructure/gorm"
 	httpHandler "project-home-iot/internal/infrastructure/http"
 	mqttInfra "project-home-iot/internal/infrastructure/mqtt"
-
+	"project-home-iot/internal/firebase"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
 
 type AppHandlers struct {
-	Auth    *auth.AuthHandler
+	// Auth    *auth.AuthHandler
+	AuthClient *auth.Client
 	Device  *httpHandler.DeviceHandler
 	Command *httpHandler.CommandHandler
     Room    *httpHandler.RoomHandler
@@ -28,10 +29,10 @@ type AppHandlers struct {
 	SensorHandler *mqttInfra.SensorHandler
 }
 
-func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
+func InitializeApp(db *gorm.DB, client mqtt.Client) (*AppHandlers, error) {
 	wire.Build(
 		// auth
-		auth.ProviderSet,
+		// auth.ProviderSet,
 
 		// repo
 		gormRepo.NewDeviceRepository,
@@ -49,6 +50,8 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		wire.Bind(new(domain.RoomRepository), new(*gormRepo.RoomRepository)),
         wire.Bind(new(domain.UserRepository), new(*gormRepo.UserRepository)),
 		wire.Bind(new(domain.Recorder), new(*gormRepo.RecorderRepository)),
+
+		firebase.NewFirebaseAuthClient,
 
 		// uc
 		usecase.NewDeviceUsecase,
@@ -77,5 +80,5 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) *AppHandlers {
 		wire.Struct(new(AppHandlers), "*"),
 	)
 
-	return &AppHandlers{}
+	return &AppHandlers{},nil
 }

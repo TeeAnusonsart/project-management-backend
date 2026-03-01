@@ -10,12 +10,18 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 		return c.SendString("Hello, World!")
 	})
 
-	api := app.Group("/api")
+	// api := app.Group("/api")
 
 	// authen
-	authGroup := api.Group("/auth")
-	authGroup.Post("/login", handlers.Auth.Login)
-	authGroup.Post("/register", handlers.Auth.Register)
+	authGroup := app.Group("/auth")
+	authGroup.Post("/login", handlers.User.Login)
+	// authGroup.Post("/register", handlers.Auth.Register)
+
+	
+
+	
+	authMid := middleware.FirebaseAuth(handlers.AuthClient)
+	api := app.Group("/api",authMid)
 
 	secretGroup := api.Group("/secret", middleware.JWTMiddleware())
 	secretGroup.Get("/data", func(c *fiber.Ctx) error {
@@ -23,7 +29,6 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 			"secret_data": "นี่คือข้อมูลลับที่ได้รับการป้องกันด้วย JWT",
 		})
 	})
-
 
 	// device
 	deviceGroup := api.Group("/devices")

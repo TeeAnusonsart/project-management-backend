@@ -3,7 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"project-home-iot/internal/auth"
+	// "project-home-iot/internal/auth"
+	"log"
 	"project-home-iot/internal/database"
 	"project-home-iot/internal/infrastructure/gorm"
 	"project-home-iot/internal/core/domain"
@@ -24,6 +25,8 @@ func main() {
 
 	db := database.ConnectDB()
 
+	
+
 	fmt.Println("Starting fresh migration...")
 	db.AutoMigrate(
 		&gorm.User{},
@@ -32,17 +35,17 @@ func main() {
 		&gorm.Device{},
 		&gorm.Widget{},
 		&gorm.Log{},
-		&auth.UserAccount{},
+		// &auth.UserAccount{},
 	)
 
 	gorm.SeedAll(db)
 
 	// db.AutoMigrate(&models.Widget{})
 
-	opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
+	// opts := mqttlib.NewClientOptions().AddBroker("tcp://mqtt-broker:1883").SetClientID("go-backend-server")
 
 	// opts := mqttlib.NewClientOptions().AddBroker("tcp://192.168.137.251:1883").SetClientID("go-backend-server")
-	// opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
+	opts := mqttlib.NewClientOptions().AddBroker("tcp://localhost:1883").SetClientID("go-backend-server")
 
 	// opts := mqttlib.NewClientOptions().
 	// AddBroker("tcp://broker.hivemq.com:1883").
@@ -53,16 +56,12 @@ func main() {
 		panic(token.Error())
 	}
 
-	handlers := InitializeApp(db, client)
+	// handlers := InitializeApp(db, client)
 
-	// recorderRepo := gorm.NewRecorderRepository(db)
-	// widgetRepo := gorm.NewWidgetRepository(db)
-	// recordLogUC := usecase.NewRecordLogUsecase(recorderRepo,widgetRepo)
-
-	// handler := mqtt.NewSensorHandler(recordLogUC)
-	// sub := mqtt.NewSubscriber(client)
-
-	// _ = sub.SubscribeSensor(handler.HandleSensorMessage)
+	handlers, err := InitializeApp(db, client)
+	if err != nil {
+		log.Fatalf("ไม่สามารถเริ่มระบบได้: %v", err)
+	}
 
 	handlers.MQTT.SubscribeDeviceRegistration(client)
 	client.Publish("xxx/y", 0, false, "Hello MQTT")
