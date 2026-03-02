@@ -55,7 +55,9 @@ func SeedUsers(db *gorm.DB) error {
 	// db.FirstOrCreate(&user, auth.UserAccount{Username: user.Username})
 
 	sensorUser := User{Email: "Sensor",Name: "Sensor",}
+	adminUser := User{Email: "admin@admin.com",Name: "Admin"}
 	db.FirstOrCreate(&sensorUser)
+	db.FirstOrCreate(&adminUser)
 	return nil
 }
 
