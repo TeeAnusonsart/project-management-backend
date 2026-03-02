@@ -57,11 +57,12 @@ func (h *RoomHandler) GetRoom(c *fiber.Ctx) error {
 
 	room, err := h.usecase.GetRoom(uint(id))
 	if err != nil {
-		// เช็คว่าเป็น Error แบบหาไม่เจอ หรือ Error ระบบ
-		if errors.Is(err, domain.ErrDeviceNotFound) { // หมายเหตุ: หากใน domain มี ErrRoomNotFound ควรปรับไปใช้อันนั้นครับ
+		switch {
+		case errors.Is(err, domain.ErrRoomNotFound):
 			return fiber.NewError(fiber.StatusNotFound, "Room not found")
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve room")
 		}
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	return sendResponse(c, fiber.StatusOK, "Room retrieved successfully", ToRoomResponse(room))
@@ -70,11 +71,11 @@ func (h *RoomHandler) GetRoom(c *fiber.Ctx) error {
 // [POST] /rooms
 func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	var req CreateRoomRequest
+
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
-	// คงรูปแบบ Response อันนี้ไว้เพื่อให้ส่ง fieldErrors กลับไปได้
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
@@ -84,8 +85,15 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.usecase.CreateRoom(req.RoomName); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create room")
+	err := h.usecase.CreateRoom(req.RoomName)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrRoomExist):
+			return fiber.NewError(fiber.StatusConflict, err.Error())
+
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to create room")
+		}
 	}
 
 	return sendResponse(c, fiber.StatusCreated, "Room created successfully", nil)
@@ -113,7 +121,12 @@ func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.UpdateRoom(uint(id), req.RoomName); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to update room")
+		switch {
+		case errors.Is(err, domain.ErrRoomNotFound):
+			return fiber.NewError(fiber.StatusNotFound, "Room not found")
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to update room")
+		}
 	}
 
 	return sendResponse(c, fiber.StatusOK, "Room updated successfully", nil)
@@ -127,7 +140,12 @@ func (h *RoomHandler) DeleteRoom(c *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.DeleteRoom(uint(id)); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to delete room")
+		switch {
+		case errors.Is(err, domain.ErrRoomNotFound):
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to delete room")
+		}
 	}
 
 	return sendResponse(c, fiber.StatusOK, "Room deleted successfully", nil)
@@ -154,8 +172,16 @@ func (h *RoomHandler) AddDevice(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.usecase.AddDeviceToRoom(uint(roomID), req.DeviceID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to add device to room")
+	err = h.usecase.AddDeviceToRoom(uint(roomID), req.DeviceID)
+	if err != nil {
+		switch err {
+		case domain.ErrRoomNotFound:
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		case domain.ErrDeviceNotFound:
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to add device to room")
+		}
 	}
 
 	return sendResponse(c, fiber.StatusOK, "Device added to room successfully", nil)
@@ -170,7 +196,12 @@ func (h *RoomHandler) ListDevices(c *fiber.Ctx) error {
 
 	devices, err := h.usecase.ListDevicesInRoom(uint(roomID))
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve devices in room")
+		switch {
+		case errors.Is(err, domain.ErrRoomNotFound):
+			return fiber.NewError(fiber.StatusNotFound, "Room not found")
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve devices in room")
+		}
 	}
 
 	response := make([]DeviceResponse, 0)

@@ -20,8 +20,9 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	
 
 	
-	authMid := middleware.FirebaseAuth(handlers.AuthClient)
-	api := app.Group("/api",authMid)
+	// authMid := middleware.FirebaseAuth(handlers.AuthClient)
+	// api := app.Group("/api",authMid)
+	api := app.Group("/api")
 
 	secretGroup := api.Group("/secret", middleware.JWTMiddleware())
 	secretGroup.Get("/data", func(c *fiber.Ctx) error {

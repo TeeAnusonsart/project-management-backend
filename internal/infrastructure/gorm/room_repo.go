@@ -2,7 +2,7 @@ package gorm
 
 import (
 	"project-home-iot/internal/core/domain"
-
+	"errors"
 	"gorm.io/gorm"
 )
 
@@ -61,6 +61,24 @@ func (r *RoomRepository) FindByID(id uint) (*domain.Room, error) {
 
 	return ModelToDomainRoomWithDevices(&model), nil
 }
+
+func (r *RoomRepository) FindByRoomName(roomName string) (*domain.Room, error) {
+	var model Room
+
+	err := r.db.
+		Where("room_name = ?", roomName).
+		First(&model).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrRoomNotFound
+		}
+		return nil, err
+	}
+
+	return ModelToDomainRoom(&model), nil
+}
+
 func (r *RoomRepository) Update(room *domain.Room) error {
 	return r.db.Model(&Room{}).
 		Where("id = ?", room.ID).
@@ -83,6 +101,7 @@ func (r *RoomRepository) AddDevice(roomID uint, deviceID string) error {
 		Where("device_id = ?", deviceID).
 		Update("room_id", roomID).Error
 }
+
 
 func (r *RoomRepository) ListDeviceSummaries(roomID uint) ([]*domain.DeviceSummary, error) {
 	var result []*domain.DeviceSummary

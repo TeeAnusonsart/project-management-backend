@@ -36,7 +36,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) (*AppHandlers, error) {
 	widgetUsecase := usecase.NewWidgetUsecase(widgetRepository, recorderRepository)
 	commandHandler := http.NewCommandHandler(commandUsecase, widgetUsecase)
 	roomRepository := gorm2.NewRoomRepository(db)
-	roomUsecase := usecase.NewRoomUsecase(roomRepository)
+	roomUsecase := usecase.NewRoomUsecase(roomRepository, deviceRepository)
 	roomHandler := http.NewRoomHandler(roomUsecase)
 	widgetHandler := http.NewWidgetHandler(widgetUsecase)
 	userRepository := gorm2.NewUserRepository(db)

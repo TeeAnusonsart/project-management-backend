@@ -10,6 +10,7 @@ type RoomRepository interface {
 	Create(room *Room) error
 	FindAll() ([]*Room, error)
 	FindByID(id uint) (*Room, error)
+	FindByRoomName(name string) (*Room, error)
 	Update(room *Room) error
 	Delete(id uint) error
 

@@ -19,4 +19,5 @@ var (
     ErrDeviceNotFound      = errors.New("device not found")
 	ErrWidgetNotFound = errors.New("widget not found")
 	ErrRoomNotFound   = errors.New("room not found")
+	ErrRoomExist = errors.New("room is already exist")
 )
