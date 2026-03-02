@@ -10,6 +10,7 @@ import (
 	"firebase.google.com/go/v4/auth"
 	"github.com/eclipse/paho.mqtt.golang"
 	"gorm.io/gorm"
+	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
 	"project-home-iot/internal/firebase"
 	gorm2 "project-home-iot/internal/infrastructure/gorm"
@@ -56,6 +57,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) (*AppHandlers, error) {
 		MQTT:             mqttHandler,
 		SensorSubscriber: sensorSubscriber,
 		SensorHandler:    sensorHandler,
+		UserRepo:         userRepository,
 	}
 	return appHandlers, nil
 }
@@ -73,4 +75,5 @@ type AppHandlers struct {
 	MQTT             *mqtt2.MQTTHandler
 	SensorSubscriber *mqtt2.SensorSubscriber
 	SensorHandler    *mqtt2.SensorHandler
+	UserRepo         domain.UserRepository
 }

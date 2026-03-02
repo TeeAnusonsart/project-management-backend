@@ -132,6 +132,9 @@ type UserResponse struct {
 }
 
 func ToUserResponse(u *domain.User) UserResponse {
+	if u == nil {
+        return UserResponse{} 
+    }
 	return UserResponse{
 		Name:  u.Name,
 		Email: u.Email,

@@ -27,6 +27,7 @@ type AppHandlers struct {
     MQTT *mqttInfra.MQTTHandler
 	SensorSubscriber *mqttInfra.SensorSubscriber
 	SensorHandler *mqttInfra.SensorHandler
+	UserRepo domain.UserRepository
 }
 
 func InitializeApp(db *gorm.DB, client mqtt.Client) (*AppHandlers, error) {

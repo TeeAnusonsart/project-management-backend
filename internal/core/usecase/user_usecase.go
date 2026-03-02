@@ -78,8 +78,13 @@ func (u *userUsecase) ListUsers() ([]*domain.User, error) {
 func (u *userUsecase) GetUser(email string) (*domain.User, error) {
     user, err := u.userRepo.FindByEmail(email)
     if err != nil {
-        return nil, errors.New("unauthorized: email not found in system")
+        return nil, err
     }
+    
+    if user == nil {
+        return nil, errors.New("user not found") 
+    }
+    
     return user, nil
 }
 
