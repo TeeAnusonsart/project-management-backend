@@ -2,10 +2,8 @@ package gorm
 
 import (
 	"log"
-	"project-home-iot/internal/auth"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -48,13 +46,13 @@ func SeedCapabilities(db *gorm.DB) {
 }
 
 func SeedUsers(db *gorm.DB) error {
-	password := "123456"
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	user := auth.UserAccount{Username: "testuser", Password: string(hashedPassword)}
-	db.FirstOrCreate(&user, auth.UserAccount{Username: user.Username})
+	// password := "123456"
+	// hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// if err != nil {
+	// 	return err
+	// }
+	// user := auth.UserAccount{Username: "testuser", Password: string(hashedPassword)}
+	// db.FirstOrCreate(&user, auth.UserAccount{Username: user.Username})
 
 	sensorUser := User{Email: "Sensor",Name: "Sensor",}
 	db.FirstOrCreate(&sensorUser)
