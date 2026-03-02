@@ -20,4 +20,5 @@ var (
 	ErrWidgetNotFound = errors.New("widget not found")
 	ErrRoomNotFound   = errors.New("room not found")
 	ErrRoomExist = errors.New("room is already exist")
+	ErrEmailAlreadyExist = errors.New("Email is already exist")
 )

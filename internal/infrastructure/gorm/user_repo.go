@@ -3,6 +3,7 @@ package gorm
 import (
 	"project-home-iot/internal/core/domain"
 	"gorm.io/gorm"
+	"errors"
 )
 
 type User struct {
@@ -41,42 +42,30 @@ func (r *UserRepository) FindAll() ([]*domain.User, error) {
 	return result, nil
 }
 
-// func (r *UserRepository) FindByUID(id uint) (*domain.User, error) {
-// 	var model User
-// 	if err := r.db.First(&model, id).Error; err != nil {
-// 		return nil, err
-// 	}
-// 	return ModelToDomainUser(&model), nil
-// }
+
 
 func (r *UserRepository) Delete(email string) error {
 	return r.db.Where("email = ?", email).Delete(&User{}).Error
 }
 
-// func (r *UserRepository) UpdatePassword(id uint, hashedPassword string) error {
-// 	return r.db.Model(&User{}).
-// 		Where("id = ?", id).
-// 		Update("password", hashedPassword).Error
-// }
 
-// func (r *UserRepository) UpdateProfilePath(id uint, path string) error {
-// 	return r.db.Model(&User{}).
-// 		Where("id = ?", id).
-// 		Update("profile_path", path).Error
-// }
 
 func (r *UserRepository) FindByEmail(email string) (*domain.User, error) {
-    var model User
-    if err := r.db.Where("email = ?", email).First(&model).Error; err != nil {
-        return nil, err
-    }
-    return ModelToDomainUser(&model), nil
+	var model User
+
+	err := r.db.Where("email = ?", email).First(&model).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil 
+		}
+		return nil, err
+	}
+
+	user := ModelToDomainUser(&model)
+	return user, nil
 }
 
 
-// func (r *UserRepository) UpdateUID(email string, uid string) error {
-//     return r.db.Model(&User{}).Where("id = ?", id).Update("uid", uid).Error
-// }
 
 
 func DomainToUserModel(u *domain.User) *User {

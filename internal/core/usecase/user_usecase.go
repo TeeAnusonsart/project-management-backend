@@ -32,15 +32,13 @@ func (u *userUsecase) CreateUser(user *domain.User) error {
 	if err != nil {
 		return err
 	}
+
 	if exist != nil {
-		return errors.New("Email already exist")
-	}
-	if user.Role == "" {
-		user.Role = domain.RoleUser
+		return domain.ErrEmailAlreadyExist
 	}
 
-	if !user.Role.IsValid() {
-		return errors.New("invalid role")
+	if user.Role == "" {
+		user.Role = domain.RoleUser
 	}
 
 	return u.userRepo.Create(user)

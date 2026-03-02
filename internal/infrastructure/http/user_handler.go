@@ -3,7 +3,7 @@ package http
 import (
 	"project-home-iot/internal/core/domain"
 	"project-home-iot/internal/core/usecase"
-
+	"errors"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -18,7 +18,7 @@ func NewUserHandler(u usecase.UserUsecase) *UserHandler {
 // --- Request DTOs ---
 
 type CreateUserRequest struct {
-	Name  string `json:"name" validate:"required"`
+	Name  string `json:"name"`
 	Email string `json:"email" validate:"required,email"` // Added validate:"email" to check email format
 }
 
@@ -46,12 +46,10 @@ func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	var req CreateUserRequest
 
-	// 1. Validate JSON payload
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
 	}
 
-	// 2. Structural validation (Required, Email, etc.)
 	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
 			Status:  "error",
@@ -61,18 +59,21 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// 3. Map to Domain Model
 	user := &domain.User{
 		Email: req.Email,
 		Name:  req.Name,
 		Role:  domain.RoleUser,
 	}
 
-	// 4. Save to Database
-	if err := h.usecase.CreateUser(user); err != nil {
-		// You can pass err.Error() if you want the frontend to see the exact error, 
-		// or keep it generic to hide database details.
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	err := h.usecase.CreateUser(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrEmailAlreadyExist):
+			return fiber.NewError(fiber.StatusConflict, err.Error())
+
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to create user")
+		}
 	}
 
 	return sendResponse(c, fiber.StatusCreated, "User created successfully", nil)
@@ -128,13 +129,11 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 type UserResponse struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
-	Role  string `json:"role"`
 }
 
 func ToUserResponse(u *domain.User) UserResponse {
 	return UserResponse{
 		Name:  u.Name,
 		Email: u.Email,
-		Role:  string(u.Role),
 	}
 }
