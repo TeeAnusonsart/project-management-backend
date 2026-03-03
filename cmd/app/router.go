@@ -94,7 +94,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	adminOnly := middleware.RoleGuard(handlers.UserRepo, "ADMIN")
 
 	
-	authMid := middleware.FirebaseAuth(handlers.AuthClient)
+	authMid := middleware.FirebaseAuth(handlers.AuthClient,handlers.UserRepo)
 	// api := app.Group("/api",authMid)
 	api := app.Group("/api",authMid)
 
