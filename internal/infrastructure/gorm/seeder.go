@@ -36,6 +36,8 @@ func SeedCapabilities(db *gorm.DB) {
 		{CapabilityType: "toggle", ControlType: "fan-power"},
 		{CapabilityType: "level", ControlType: "fan-speed"},
 		{CapabilityType: "sensor", ControlType: "temperature"},
+		{CapabilityType: "sensor", ControlType: "humidity"},
+		{CapabilityType: "text", ControlType: "content"},
 	}
 	for _, c := range capabilities {
 		db.FirstOrCreate(&c, Capability{
