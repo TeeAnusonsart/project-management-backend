@@ -15,7 +15,7 @@ func FirebaseAuth(authClient *auth.Client,userRepo domain.UserRepository) fiber.
         if authHeader == "" {
             return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
         }
-
+        
         tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
         token, err := authClient.VerifyIDToken(context.Background(), tokenString)
         if err != nil {
