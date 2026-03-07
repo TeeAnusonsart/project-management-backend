@@ -46,7 +46,7 @@ func InitializeApp(db *gorm.DB, client mqtt.Client) (*AppHandlers, error) {
 	mqttHandler := mqtt2.NewMQTTHandler(deviceUsecase, widgetUsecase)
 	sensorSubscriber := mqtt2.NewSensorSubscriber(client)
 	recordLogUsecase := usecase.NewRecordLogUsecase(recorderRepository, widgetRepository, capabilityRepository)
-	sensorHandler := mqtt2.NewSensorHandler(recordLogUsecase, deviceUsecase)
+	sensorHandler := mqtt2.NewSensorHandler(recordLogUsecase, deviceUsecase, widgetUsecase)
 	appHandlers := &AppHandlers{
 		AuthClient:       authClient,
 		Device:           deviceHandler,

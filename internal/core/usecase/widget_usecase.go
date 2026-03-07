@@ -1,6 +1,9 @@
 package usecase
 
-import "project-home-iot/internal/core/domain"
+import (
+	"project-home-iot/internal/core/domain"
+	"time"
+)
 
 type WidgetUsecase interface {
 	CreateWidget(widget *domain.Widget) error
@@ -10,7 +13,7 @@ type WidgetUsecase interface {
 	ListWidgets() ([]*domain.Widget, error)
 	GetWidget(id uint) (*domain.Widget, error)
 	GetWidgetByStatus(status string) ([]*domain.Widget, error)
-	GetLogs(id uint)([]*domain.Log, error)
+	GetLogs(id uint,period string)([]*domain.Log, error)
 	ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error)
     ListWidgetsByRoomWithStatus(roomID uint, status string) ([]*domain.Widget, error)
 	UpdateValue(widgetID uint, value string) error
@@ -51,8 +54,26 @@ func (u *widgetUsecase) GetWidget(id uint) (*domain.Widget, error) {
 	return u.widgetRepo.FindByID(id)
 }
 
-func (u *widgetUsecase) GetLogs(id uint) ([]*domain.Log, error){
-	return u.recorderRepo.GetLogByWidgetID(id)
+func (u *widgetUsecase) GetLogs(id uint, period string) ([]*domain.Log, error) {
+    var startTime time.Time
+    var timeBucket string // เปลี่ยนชื่อจาก timeFormat เพื่อความชัดเจน
+    now := time.Now()
+
+    switch period {
+    case "week":
+        startTime = now.AddDate(0, 0, -7)
+        timeBucket = "day" // ตัดเศษให้เหลือระดับ วัน
+    case "day":
+        startTime = now.Add(-24 * time.Hour)
+        timeBucket = "hour" // ตัดเศษให้เหลือระดับ ชั่วโมง
+    case "hour":
+        fallthrough
+    default:
+        startTime = now.Add(-1 * time.Hour)
+        timeBucket = "minute" // ตัดเศษให้เหลือระดับ นาที
+    }
+
+    return u.recorderRepo.GetAverageLogs(id, startTime, timeBucket)
 }
 
 func (u *widgetUsecase) ListWidgetsByRoom(roomID uint) ([]*domain.Widget, error) {

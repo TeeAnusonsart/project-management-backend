@@ -3,6 +3,8 @@ package gorm
 import (
 	"project-home-iot/internal/core/domain"
 	"gorm.io/gorm"
+	"time"
+	"fmt"
 	// "project-home-iot/internal/infrastructure/gorm/models"
 	// "project-home-iot/internal/infrastructure/mappers"
 )
@@ -41,17 +43,27 @@ func (r *RecorderRepository) RecordLog(log *domain.Log) error {
     return nil
 }
 
-func (r *RecorderRepository) GetLogByWidgetID(widgetID uint) ([]*domain.Log, error) {
-	var result []*domain.Log
+func (r *RecorderRepository) GetAverageLogs(widgetID uint, startTime time.Time, timeBucket string) ([]*domain.Log, error) {
+    var result []*domain.Log
+    
+    timeGroupSQL := fmt.Sprintf("date_trunc('%s', created_at)", timeBucket)
 
-	err := r.db.
-		Model(&Log{}).
-		Select("value, event_type,actor,created_at").
-		Where("widget_id = ?", widgetID).
-		Scan(&result).Error
+    // ใช้ MAX() เพื่อดึงค่าที่เป็น String ออกมาสักค่าหนึ่งในกลุ่มนั้น
+    selectQuery := fmt.Sprintf(`
+        ROUND(AVG(value::numeric), 2) as value, 
+        MAX(event_type) as event_type, 
+        MAX(actor) as actor,
+        %s as created_at
+    `, timeGroupSQL)
 
-	return result, err
+    err := r.db.Model(&Log{}).
+        Select(selectQuery).
+        Where("widget_id = ? AND created_at >= ?", widgetID, startTime).
+        Group(timeGroupSQL).
+        Order("created_at ASC").
+        Scan(&result).Error
 
+    return result, err
 }
 
 func LogDomainToModel(d *domain.Log) *Log {

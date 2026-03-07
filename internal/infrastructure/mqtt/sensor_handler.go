@@ -11,12 +11,14 @@ import (
 type SensorHandler struct {
 	recordLogUC usecase.RecordLogUsecase
 	deviceUC usecase.DeviceUsecase
+	widgetUC usecase.WidgetUsecase
 }
 
-func NewSensorHandler(uc usecase.RecordLogUsecase,duc usecase.DeviceUsecase) *SensorHandler {
+func NewSensorHandler(uc usecase.RecordLogUsecase,duc usecase.DeviceUsecase,wuc usecase.WidgetUsecase) *SensorHandler {
 	return &SensorHandler{
 		recordLogUC: uc,
 		deviceUC: duc,
+		widgetUC: wuc,
 	}
 }
 
@@ -43,11 +45,9 @@ func (h *SensorHandler) HandleSensorMessage(
 		deviceID,
 		payload.CapabilityType,
 		payload.ControlType,
-		// payload.CapabilityID,
-		"sensor",
 		payload.Value,
-		payload.Actor,
-
+		"Sensor",
+		"Sensor",
 	)
 }
 
@@ -56,5 +56,5 @@ type SensorPayload struct {
 	CapabilityType string `json:"capability_type" validate:"required"`
 	ControlType string `json:"control_type" validate:"required"`
 	Value string `json:"value" validate:"required"`
-	Actor string `json:"actor" validate:"required"`
+	// Actor string `json:"actor" validate:"required"`
 }

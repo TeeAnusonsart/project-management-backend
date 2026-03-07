@@ -26,7 +26,7 @@ type Log struct {
 }
 
 type WidgetRepository interface {
-	GetWidgetIdByDeviceAndCapability(deviceId string, capabilityId uint) *Widget
+	GetWidgetIdByDeviceAndCapability(deviceId string, capabilityId uint) (*Widget,error)
 	CreateWidget(widget *Widget) error
 	Update(widget *Widget) error
 	Delete(id uint) error
@@ -50,5 +50,5 @@ type Recorder interface {
 	// DataReceive(log *Log) error
 	// RecordLog(widgetId uint,eventType string,value uint) error
 	RecordLog(log *Log) error
-	GetLogByWidgetID(widgetID uint) ([]*Log, error)
+	GetAverageLogs(widgetID uint,startTime time.Time,timeFormat string) ([]*Log, error)
 }

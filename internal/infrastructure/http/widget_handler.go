@@ -91,7 +91,9 @@ func (h *WidgetHandler) GetLogs(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid Widget ID format")
 	}
 
-	logs, err := h.usecase.GetLogs(uint(id))
+	period := c.Query("period", "hour")
+
+	logs, err := h.usecase.GetLogs(uint(id),period)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve logs")
 	}
