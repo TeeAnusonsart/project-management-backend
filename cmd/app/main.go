@@ -12,6 +12,10 @@ import (
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+
+	fiberSwagger "github.com/swaggo/fiber-swagger"
+
+	_ "project-home-iot/cmd/app/docs"
 	// "project-home-iot/internal/core/usecase"
 	// "project-home-iot/internal/infrastructure/gorm"
 	// "project-home-iot/internal/infrastructure/mqtt"
@@ -87,6 +91,7 @@ func main() {
 	})
 
 	app.Static("/uploads", "./uploads")
+	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	SetupRoutes(app, handlers)
 
