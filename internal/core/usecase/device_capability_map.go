@@ -31,7 +31,9 @@ var DeviceCapabilityMap = map[string][]CapabilityRef{
     },
     "environment": {
         {Type: "sensor", Control: "humidity"},
+        {Type: "sensor", Control: "gas"},
         {Type: "text", Control: "content"},
+
     },
     "ph": {
         {Type: "sensor", Control: "ph"},
