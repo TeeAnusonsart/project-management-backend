@@ -28,6 +28,7 @@ type UserRepository interface {
 	// FindByUID(uid uint) (*User, error)
 	FindByEmail(email string) (*User, error)
 	Delete(email string) error
+	Update(user *User) error
 
 	// UpdatePassword(id uint, hashedPassword string) error
 	// UpdateProfilePath(id uint, path string) error

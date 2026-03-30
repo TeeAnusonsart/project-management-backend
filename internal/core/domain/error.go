@@ -21,4 +21,5 @@ var (
 	ErrRoomNotFound   = errors.New("room not found")
 	ErrRoomExist = errors.New("room is already exist")
 	ErrEmailAlreadyExist = errors.New("Email is already exist")
+	ErrUserNotFound = errors.New("user not found")
 )

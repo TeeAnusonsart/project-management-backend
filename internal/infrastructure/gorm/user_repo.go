@@ -65,7 +65,15 @@ func (r *UserRepository) FindByEmail(email string) (*domain.User, error) {
 	return user, nil
 }
 
-
+func (r *UserRepository) Update(user *domain.User) error {
+	model := DomainToUserModel(user)
+	err := r.db.Model(&User{}).Where("email = ?", user.Email).Updates(model).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.ErrUserNotFound
+		}
+	
+	return err
+}
 
 
 func DomainToUserModel(u *domain.User) *User {

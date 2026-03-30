@@ -14,6 +14,7 @@ type UserUsecase interface {
 	Login(ctx context.Context, idToken string) (*domain.User, error)
 	GetUser(email string) (*domain.User, error)
 	DeleteUser(email string) error
+	UpdateUser(user *domain.User) error
 }
 
 type userUsecase struct {
@@ -43,6 +44,20 @@ func (u *userUsecase) CreateUser(user *domain.User) error {
 	}
 
 	return u.userRepo.Create(user)
+}
+
+func (u *userUsecase) UpdateUser(user *domain.User) error {
+	existingUser, err := u.userRepo.FindByEmail(user.Email)
+	if err != nil {
+		return err
+	}
+
+	if existingUser == nil {
+		return errors.New("user not found")
+	}
+
+	existingUser.Name = user.Name
+	return u.userRepo.Update(existingUser)
 }
 
 func (u *userUsecase) Login(ctx context.Context, idToken string) (*domain.User, error) {

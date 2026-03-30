@@ -5,7 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
+// func SetupRoutesWithoutMiddleware(app *fiber.App, handlers *AppHandlers) {
 // 	app.Get("/", func(c *fiber.Ctx) error {
 // 		return c.SendString("Hello, World!")
 // 	})
@@ -123,7 +123,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	roomGroup.Delete("/:room_id",adminOnly, handlers.Room.DeleteRoom)
 
 	roomGroup.Post("/:room_id/devices",adminOnly, handlers.Room.AddDevice)
-	roomGroup.Get("/:room_id/devices",adminOnly, handlers.Room.ListDevices)
+	roomGroup.Get("/:room_id/devices", handlers.Room.ListDevices)
 	roomGroup.Post("/:room_id/widgets/order",adminOnly, handlers.Widget.ChangeOrder)
 
 	roomGroup.Get("/:room_id/widgets", handlers.Widget.ListByRoom)
@@ -149,6 +149,7 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 	userGroup.Post("/",adminOnly, handlers.User.CreateUser)
 	userGroup.Get("/:email", handlers.User.GetUser)
 	userGroup.Delete("/:email",adminOnly, handlers.User.DeleteUser)
+	userGroup.Patch("/:email", adminOnly, handlers.User.UpdateUser)
 	// userGroup.Post("/:user_id/change-password", handlers.User.ChangePassword)
 	// userGroup.Post("/:user_id/upload-profile", handlers.User.UploadProfile)
 }

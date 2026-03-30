@@ -124,12 +124,55 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	return sendResponse(c, fiber.StatusOK, "User account deleted successfully", nil)
 }
 
+func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
+	email := c.Params("email")
+	if email == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Email parameter is missing")
+	}
+	var req UpdateUserRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request payload")
+	}
+
+	if fieldErrors := validateStruct(req); len(fieldErrors) > 0 {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(domain.ErrorResponse{
+			Status:  "error",
+			Code:    fiber.StatusUnprocessableEntity,
+			Message: "Validation failed",
+			Errors:  fieldErrors,
+		})
+	}
+	user := &domain.User{
+		Email: email, // ใช้ email จาก URL parameter เป็นตัวระบุที่ไม่เปลี่ยนแปลง
+		Name:  req.Name,
+		Role:  domain.RoleUser, // กำหนด Role เป็น User เสมอ (หรือจะรับจาก Request ก็ได้ถ้าต้องการ)
+	}
+
+	err := h.usecase.UpdateUser(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrUserNotFound):
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		default:
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to update user")
+		}
+	}
+
+	return sendResponse(c, fiber.StatusOK, "User updated successfully", nil)
+
+}
+
 // --- Response Helpers & DTOs ---
 
 type UserResponse struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Role string `json:"role"`
+}
+
+type UpdateUserRequest struct {
+	Name  string `json:"name" validate:"required,min=2,max=50"`
 }
 
 func ToUserResponse(u *domain.User) UserResponse {
