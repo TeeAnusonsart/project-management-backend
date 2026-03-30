@@ -136,15 +136,18 @@ func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, err
 }
 
 func (r *DeviceRepository) UpdateName(id string, name string) error {
-	err := r.db.Model(&Device{}).
+	tx := r.db.Model(&Device{}).
 		Where("device_id = ?", id).
-		Update("device_name", name).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return domain.ErrDeviceNotFound
-		}
-		return err
+		Update("device_name", name)
+
+	if tx.Error != nil {
+		return tx.Error
 	}
+
+	if tx.RowsAffected == 0 {
+		return domain.ErrDeviceNotFound
+	}
+
 	return nil
 }
 
