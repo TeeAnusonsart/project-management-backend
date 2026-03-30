@@ -75,7 +75,7 @@ func (h *WidgetHandler) GetWidget(c *fiber.Ctx) error {
 
 	w, err := h.usecase.GetWidget(uint(id))
 	if err != nil {
-		if errors.Is(err, domain.ErrDeviceNotFound) { // สามารถเปลี่ยนเป็น ErrWidgetNotFound ได้ตามโดเมนของคุณ
+		if errors.Is(err, domain.ErrWidgetNotFound) { // สามารถเปลี่ยนเป็น ErrWidgetNotFound ได้ตามโดเมนของคุณ
 			return fiber.NewError(fiber.StatusNotFound, "Widget not found")
 		}
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())

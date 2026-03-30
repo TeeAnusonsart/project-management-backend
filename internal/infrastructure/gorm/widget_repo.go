@@ -87,7 +87,6 @@ func (r *WidgetRepository) FindByID(id uint) (*domain.Widget, error) {
         First(&widgetModel, id).Error
 
     if err != nil {
-        // เช็คว่าถ้าหาไม่เจอ ให้ส่ง Error ของ Domain กลับไป
         if errors.Is(err, gorm.ErrRecordNotFound) {
             return nil, domain.ErrWidgetNotFound 
         }
