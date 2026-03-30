@@ -129,6 +129,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 type UserResponse struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
+	Role string `json:"role"`
 }
 
 func ToUserResponse(u *domain.User) UserResponse {
@@ -138,5 +139,6 @@ func ToUserResponse(u *domain.User) UserResponse {
 	return UserResponse{
 		Name:  u.Name,
 		Email: u.Email,
+		Role: string(u.Role),
 	}
 }
