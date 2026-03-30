@@ -142,6 +142,10 @@ func (h *DeviceHandler) PairDevice(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusConflict, err.Error())
 		case errors.Is(err, domain.ErrDeviceNotFound):
 			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		case errors.Is(err, domain.ErrInvalidDeviceKey):
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		case errors.Is(err, domain.ErrPairFailed):
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		default:
 			return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 		}
