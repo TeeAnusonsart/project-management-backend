@@ -71,7 +71,14 @@ func (u *deviceUsecase) GetPairedDevice() ([]*domain.DeviceSummary,error) {
 }
 
 func (u *deviceUsecase) UpdateDevice(id string, name string) error {
-	return u.repo.UpdateName(id, name)
+	err := u.repo.UpdateName(id, name)
+	if err != nil {
+		if err == domain.ErrDeviceNotFound {
+			return domain.ErrDeviceNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {

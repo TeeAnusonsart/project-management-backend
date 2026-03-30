@@ -100,6 +100,9 @@ func (h *DeviceHandler) UpdateDevice(c *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.UpdateDevice(id, req.DeviceName); err != nil {
+		if errors.Is(err, domain.ErrDeviceNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "Device not found")
+		}
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
@@ -162,6 +165,9 @@ func (h *DeviceHandler) UnpairDevice(c *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.UnpairDevice(id); err != nil {
+		if errors.Is(err, domain.ErrDeviceNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "Device not found")
+		}
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	return sendResponse(c, fiber.StatusOK, "Device unpaired successfully", nil)
