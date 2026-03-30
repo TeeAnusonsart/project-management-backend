@@ -136,9 +136,16 @@ func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, err
 }
 
 func (r *DeviceRepository) UpdateName(id string, name string) error {
-	return r.db.Model(&Device{}).
+	err := r.db.Model(&Device{}).
 		Where("device_id = ?", id).
 		Update("device_name", name).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.ErrDeviceNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *DeviceRepository) Pair(id string, deviceKey string) error {
