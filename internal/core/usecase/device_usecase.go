@@ -122,6 +122,14 @@ func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
 
 func (u *deviceUsecase) UnpairDevice(id string) error {
 
+	_, err := u.repo.GetByID(id)
+    if err != nil {
+		if err == domain.ErrDeviceNotFound {
+			return domain.ErrDeviceNotFound
+		}
+        return err
+    }
+
 	if err := u.widgetRepo.DeleteByDeviceId(id); err != nil {
 		return err
 	}
