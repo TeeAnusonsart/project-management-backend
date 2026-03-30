@@ -92,11 +92,13 @@ func SetupRoutes(app *fiber.App, handlers *AppHandlers) {
 
 	adminOnly := middleware.RoleGuard(handlers.UserRepo, "ADMIN")
 
+	duplicateMid := middleware.RejectDuplicateJSONKeys()
+
 	
 	authMid := middleware.FirebaseAuth(handlers.AuthClient,handlers.UserRepo)
 	// api := app.Group("/api",authMid)
 	authGroup.Post("/login", handlers.User.Login)
-	api := app.Group("/api",authMid)
+	api := app.Group("/api",authMid,duplicateMid)
 
 	secretGroup := api.Group("/secret", middleware.JWTMiddleware())
 	secretGroup.Get("/data", func(c *fiber.Ctx) error {
