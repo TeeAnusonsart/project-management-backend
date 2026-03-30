@@ -44,6 +44,8 @@ func (h *DeviceHandler) ListDevices(c *fiber.Ctx) error {
 			devices, err = h.usecase.GetUnpairDevice()
 		}
 	}
+	
+	
 
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())

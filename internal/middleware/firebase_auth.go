@@ -19,6 +19,8 @@ func FirebaseAuth(authClient *auth.Client,userRepo domain.UserRepository) fiber.
         }
 
         if bypassSecret != "" && authHeader == bypassSecret {
+			// อาจจะตั้งค่า email จำลองไว้ใน Locals เผื่อ Handler ถัดไปต้องใช้งาน
+			c.Locals("email", "jirat.kong@ku.th") 
 			return c.Next()
 		}
         

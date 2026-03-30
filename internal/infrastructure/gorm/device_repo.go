@@ -79,6 +79,8 @@ func (r *DeviceRepository) GetUnpairDevice() ([]*domain.DeviceSummary, error) {
 		).
 		Scan(&result).Error
 
+
+
 	return result, err
 }
 
@@ -124,6 +126,9 @@ func (r *DeviceRepository) GetSummaryByID(id string) (*domain.DeviceSummary, err
 		First(&result).Error
 
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrDeviceNotFound
+		}
 		return nil, err
 	}
 
