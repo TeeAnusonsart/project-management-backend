@@ -91,6 +91,7 @@ func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
 
     if err := u.pairCommander.RequestPair(device.DeviceID, deviceKey); err != nil {
         if err.Error() == "invalid device key" {
+			 
 			return domain.ErrInvalidDeviceKey
 		}else if err.Error() == "pair failed" {
 			return domain.ErrPairFailed
