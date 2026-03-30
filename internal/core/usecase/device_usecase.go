@@ -87,9 +87,14 @@ func (u *deviceUsecase) PairDevice(id string, deviceKey string) error {
     if exists {
         return domain.ErrDeviceAlreadyPaired
     }
+	 
 
     if err := u.pairCommander.RequestPair(device.DeviceID, deviceKey); err != nil {
-        return err
+        if err.Error() == "invalid device key" {
+			return domain.ErrInvalidDeviceKey
+		}else if err.Error() == "pair failed" {
+			return domain.ErrPairFailed
+		}
     }
 
     capsRefs := DeviceCapabilityMap[device.DeviceType]

@@ -128,7 +128,14 @@ func (h *DeviceHandler) PairDevice(c *fiber.Ctx) error {
 		})
 	}
 
-	err := h.usecase.PairDevice(id, req.DeviceKey)
+	_, err := h.usecase.GetDevice(id)
+	if err != nil {
+		if errors.Is(err, domain.ErrDeviceNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "Device not found")
+		}
+	}
+
+	err = h.usecase.PairDevice(id, req.DeviceKey)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrDeviceAlreadyPaired):

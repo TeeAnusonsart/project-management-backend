@@ -22,4 +22,6 @@ var (
 	ErrRoomExist = errors.New("room is already exist")
 	ErrEmailAlreadyExist = errors.New("Email is already exist")
 	ErrUserNotFound = errors.New("user not found")
+	ErrInvalidDeviceKey = errors.New("invalid device key")
+	ErrPairFailed = errors.New("pairing failed")
 )

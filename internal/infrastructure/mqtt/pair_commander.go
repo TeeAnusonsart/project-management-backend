@@ -56,6 +56,9 @@ func (m *MQTTPairCommander) RequestPair(deviceID string, deviceKey string) error
 		if status != "success" {
 			return fmt.Errorf("pair failed")
 		}
+		if status == "wrong_key" {
+			return fmt.Errorf("invalid device key")
+		}
 		return nil
 
 	case <-time.After(30 * time.Second):
